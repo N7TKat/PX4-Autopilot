@@ -47,34 +47,30 @@
 #include <poll.h>
 #include <string.h>
 #include <math.h>
-#include <drivers/drv_hrt.h>
 
 #include <uORB/uORB.h>
-//#include <uORB/topics/vehicle_acceleration.h>
-//#include <uORB/topics/vehicle_attitude.h>
-#include <uORB/topics/vehicle_local_position.h>
-#include <uORB/topics/debug_vect.h>
+#include <uORB/topics/vehicle_acceleration.h>
+#include <uORB/topics/vehicle_attitude.h>
 
 __EXPORT int px4_simple_app_main(int argc, char *argv[]);
 
 int px4_simple_app_main(int argc, char *argv[])
 {
 	PX4_INFO("Hello Sky!");
-	PX4_INFO("You're on branch v1.14.0-N7TKatdev");
 
-	/* subscribe to vehicle_local_position topic */
-	int localposition_sub_fd = orb_subscribe(ORB_ID(vehicle_local_position));
-	/* limit the update rate to 2 Hz */
-	orb_set_interval(localposition_sub_fd, 500);
+	/* subscribe to vehicle_acceleration topic */
+	int sensor_sub_fd = orb_subscribe(ORB_ID(vehicle_acceleration));
+	/* limit the update rate to 5 Hz */
+	orb_set_interval(sensor_sub_fd, 200);
 
-	/* advertise debug_vect topic */
-	struct debug_vect_s dbg_vect;
-	memset(&dbg_vect, 0, sizeof(dbg_vect));
-	orb_advert_t dbg_vect_pub = orb_advertise(ORB_ID(debug_vect), &dbg_vect);
+	/* advertise attitude topic */
+	struct vehicle_attitude_s att;
+	memset(&att, 0, sizeof(att));
+	orb_advert_t att_pub = orb_advertise(ORB_ID(vehicle_attitude), &att);
 
 	/* one could wait for multiple topics with this technique, just using one here */
 	px4_pollfd_struct_t fds[] = {
-		{ .fd = localposition_sub_fd,   .events = POLLIN },
+		{ .fd = sensor_sub_fd,   .events = POLLIN },
 		/* there could be more file descriptors here, in the form like:
 		 * { .fd = other_sub_fd,   .events = POLLIN },
 		 */
@@ -82,8 +78,7 @@ int px4_simple_app_main(int argc, char *argv[])
 
 	int error_counter = 0;
 
-	for (int i = 0; i < 101; i++) {
-		uint64_t timestamp_us = hrt_absolute_time();
+	for (int i = 0; i < 5; i++) {
 		/* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
 		int poll_ret = px4_poll(fds, 1, 1000);
 
@@ -105,26 +100,22 @@ int px4_simple_app_main(int argc, char *argv[])
 
 			if (fds[0].revents & POLLIN) {
 				/* obtained data for the first file descriptor */
-				struct vehicle_local_position_s local_pose;
+				struct vehicle_acceleration_s accel;
 				/* copy sensors raw data into local buffer */
-				orb_copy(ORB_ID(vehicle_local_position), localposition_sub_fd, &local_pose);
-				PX4_INFO("Local Position of JUAV is : x\t%8.4f y\t%8.4f z\t%8.4f",
-					 (double)local_pose.x,
-					 (double)local_pose.y,
-					 (double)local_pose.z);
-
-				PX4_INFO("1st Phase pass : Preparing to Debug_Vect");
+				orb_copy(ORB_ID(vehicle_acceleration), sensor_sub_fd, &accel);
+				PX4_INFO("Accelerometer:\t%8.4f\t%8.4f\t%8.4f",
+					 (double)accel.xyz[0],
+					 (double)accel.xyz[1],
+					 (double)accel.xyz[2]);
 
 				/* set att and publish this information for other apps
 				 the following does not have any meaning, it's just an example
 				*/
-				dbg_vect.timestamp = timestamp_us;
-				strncpy(dbg_vect.name, "Local_Pos", 10);
-				dbg_vect.x = local_pose.x;
-				dbg_vect.y = local_pose.y;
-				dbg_vect.z = local_pose.z;
+				att.q[0] = accel.xyz[0];
+				att.q[1] = accel.xyz[1];
+				att.q[2] = accel.xyz[2];
 
-				orb_publish(ORB_ID(debug_vect), dbg_vect_pub, &dbg_vect);
+				orb_publish(ORB_ID(vehicle_attitude), att_pub, &att);
 			}
 
 			/* there could be more file descriptors here, in the form like:
