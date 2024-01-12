@@ -55,9 +55,9 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/debug_vect.h>
 
-__EXPORT int px4_simple_app_main(int argc, char *argv[]);
+__EXPORT int px4_simple_app_n7t_main(int argc, char *argv[]);
 
-int px4_simple_app_main(int argc, char *argv[])
+int px4_simple_app_n7t_main(int argc, char *argv[])
 {
 	PX4_INFO("Hello Sky!");
 	PX4_INFO("You're on branch v1.14.0-N7TKatdev");

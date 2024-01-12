@@ -1,0 +1,5 @@
+menuconfig EXAMPLES_PX4_SIMPLE_APP_N7T
+	bool "px4_simple_app_n7t"
+	default n
+	---help---
+		Enable support for px4_simple_app_n7t
