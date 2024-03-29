@@ -54,6 +54,7 @@
 //#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/debug_vect.h>
+#include <uORB/topics/servo_info.h>
 
 __EXPORT int px4_simple_app_n7t_main(int argc, char *argv[]);
 
@@ -71,6 +72,10 @@ int px4_simple_app_n7t_main(int argc, char *argv[])
 	struct debug_vect_s dbg_vect;
 	memset(&dbg_vect, 0, sizeof(dbg_vect));
 	orb_advert_t dbg_vect_pub = orb_advertise(ORB_ID(debug_vect), &dbg_vect);
+
+	struct servo_info_s servo_info;
+	memset(&servo_info, 0, sizeof(servo_info));
+	orb_advert_t servo_info_pub = orb_advertise(ORB_ID(servo_info), &servo_info);
 
 	/* one could wait for multiple topics with this technique, just using one here */
 	px4_pollfd_struct_t fds[] = {
@@ -120,11 +125,23 @@ int px4_simple_app_n7t_main(int argc, char *argv[])
 				*/
 				dbg_vect.timestamp = timestamp_us;
 				strncpy(dbg_vect.name, "Local_Pos", 10);
-				dbg_vect.x = local_pose.x;
+				dbg_vect.x = 100;
+				dbg_vect.y = 1000;
+				dbg_vect.z = 10000;
+
+				servo_info.timestamp = timestamp_us;
+				servo_info.counter = 150;
+				servo_info.count = 4;
+				servo_info.connectiontype = SERVO_INFO_ESC_CONNECTION_TYPE_ONESHOT;
+				servo_info.errorcount[0] = 1;
+				servo_info.temperature[0] = 2;
+
+				/*dbg_vect.x = local_pose.x;
 				dbg_vect.y = local_pose.y;
-				dbg_vect.z = local_pose.z;
+				dbg_vect.z = local_pose.z;*/
 
 				orb_publish(ORB_ID(debug_vect), dbg_vect_pub, &dbg_vect);
+				orb_publish(ORB_ID(servo_info), servo_info_pub, &servo_info);
 			}
 
 			/* there could be more file descriptors here, in the form like:

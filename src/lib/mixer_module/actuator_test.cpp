@@ -73,6 +73,7 @@ void ActuatorTest::update(int num_outputs, float thrust_curve)
 					}
 
 					float value = actuator_test.value;
+					//PX4_INFO("actuator test.cpp : motor");
 
 					// handle motors
 					if ((int)OutputFunction::Motor1 <= actuator_test.function && actuator_test.function <= (int)OutputFunction::MotorMax) {

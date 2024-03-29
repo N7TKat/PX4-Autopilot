@@ -49,6 +49,7 @@ set(msg_files
 	Airspeed.msg
 	AirspeedValidated.msg
 	AirspeedWind.msg
+	AutomaticHardwareTesting.msg
 	AutotuneAttitudeControlStatus.msg
 	BatteryStatus.msg
 	ButtonEvent.msg
@@ -176,6 +177,13 @@ set(msg_files
 	SensorsStatus.msg
 	SensorsStatusImu.msg
 	SensorUwb.msg
+	ServoInfo.msg
+	ServoPowerReport.msg
+	ServoPowerStatus.msg
+	ServoReport.msg
+	ServoStatus.msg
+	ServoTempReport.msg
+	ServoTempStatus.msg
 	SystemPower.msg
 	TakeoffStatus.msg
 	TaskStackInfo.msg

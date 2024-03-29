@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2021 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,22 +38,25 @@
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
-#include <uORB/PublicationMulti.hpp>
-#include <uORB/Subscription.hpp>
-#include <uORB/topics/sensor_gps.h>
 
-#include <systemlib/mavlink_log.h>
-#include <px4_platform_common/events.h>
-#include <px4_platform_common/log.h>
-#include "modules/commander/commander_helper.h"
+#include <drivers/drv_hrt.h>
+#include <lib/perf/perf_counter.h>
+
+#include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/topics/orb_test.h>
+#include <uORB/topics/parameter_update.h>
+#include <uORB/topics/sensor_accel.h>
+#include <uORB/topics/vehicle_status.h>
 
 using namespace time_literals;
-class FakeGps : public ModuleBase<FakeGps>, public ModuleParams, public px4::ScheduledWorkItem
+
+class work_item_tutorialT : public ModuleBase<work_item_tutorialT>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
-	FakeGps(double latitude_deg = 47.3953675, double longitude_deg = 8.5619795, float altitude_m = 30.1f);
-
-	~FakeGps() override = default;
+	work_item_tutorialT();
+	~work_item_tutorialT() override;
 
 	/** @see ModuleBase */
 	static int task_spawn(int argc, char *argv[]);
@@ -66,23 +69,35 @@ public:
 
 	bool init();
 
-	orb_advert_t *get_mavlink_log_pub() { return &_mavlink_log_pub; }
+	int print_status() override;
 
 private:
-	static constexpr uint32_t SENSOR_INTERVAL_US{1000000 / 5}; // 5 Hz
-
 	void Run() override;
 
-	uORB::PublicationMulti<sensor_gps_s> _sensor_gps_pub{ORB_ID(sensor_gps)};
+	void parameters_updated();
 
-	int32_t _latitude{296603018};   // Latitude in 1e-7 degrees
-	int32_t _longitude{-823160500}; // Longitude in 1e-7 degrees
-	int32_t _altitude{30100};       // Altitude in 1e-3 meters above MSL, (millimetres)
+	// Publications
+	uORB::Publication<orb_test_s> _orb_test_pub{ORB_ID(orb_test)};
 
-	orb_advert_t    _mavlink_log_pub{nullptr};
+	// Subscriptions
+	uORB::SubscriptionCallbackWorkItem _sensor_accel_sub{this, ORB_ID(sensor_accel)};        // subscription that schedules WorkItemExample when updated
+	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s}; // subscription limited to 1 Hz updates
+	uORB::Subscription                 _vehicle_status_sub{ORB_ID(vehicle_status)};          // regular subscription for additional data
 
-        bool _warning_check{true};
+	// Performance (perf) counters
+	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
+	perf_counter_t	_loop_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": interval")};
 
-protected:
-        FakeGps *_fakegps{nullptr};
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::SYS_AUTOSTART>) _param_sys_autostart,   /**< example parameter */
+		(ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig  /**< another parameter */
+	)
+
+
+	bool _armed{false};
+	bool _sys_printing{true};
+
+	bool _time_reset{true};
+	hrt_abstime _previous_time{0};
 };

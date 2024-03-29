@@ -183,6 +183,10 @@ private:
 
 	void checkAndInformReadyForTakeoff();
 
+	//Additional Sections
+	unsigned handleCommandUserAthwcs(const vehicle_command_s &cmd);
+
+
 	enum class PrearmedMode {
 		DISABLED = 0,
 		SAFETY_BUTTON = 1,
@@ -329,4 +333,8 @@ private:
 		(ParamInt<px4::params::COM_TAKEOFF_ACT>)    _param_takeoff_finished_action,
 		(ParamFloat<px4::params::COM_CPU_MAX>)      _param_com_cpu_max
 	)
+
+	//Additional Sections
+	bool initialTime_starter{true};
+	hrt_abstime initialTime{0};
 };

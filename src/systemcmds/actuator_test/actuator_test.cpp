@@ -102,7 +102,6 @@ int actuator_test_main(int argc, char *argv[])
 
 	while ((ch = px4_getopt(argc, argv, "m:s:f:v:t:", &myoptind, &myoptarg)) != EOF) {
 		switch (ch) {
-
 		case 'm':
 			function = actuator_test_s::FUNCTION_MOTOR1 + (int)strtol(myoptarg, nullptr, 0) - 1;
 			break;

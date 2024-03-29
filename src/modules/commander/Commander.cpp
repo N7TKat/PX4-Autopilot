@@ -72,6 +72,9 @@
 #include <uORB/topics/mavlink_log.h>
 #include <uORB/topics/tune_control.h>
 
+using namespace time_literals;
+
+
 typedef enum VEHICLE_MODE_FLAG {
 	VEHICLE_MODE_FLAG_CUSTOM_MODE_ENABLED  = 1,   /* 0b00000001 Reserved for future use. | */
 	VEHICLE_MODE_FLAG_TEST_ENABLED         = 2,   /* 0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations. | */
@@ -1123,6 +1126,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 		cmd_result = handleCommandActuatorTest(cmd);
 		break;
 
+	// additional Section
+	case vehicle_command_s::VEHICLE_CMD_USER_1:
+		cmd_result = handleCommandUserAthwcs(cmd);
+		break;
+
 	case vehicle_command_s::VEHICLE_CMD_PREFLIGHT_REBOOT_SHUTDOWN: {
 
 			const int param1 = cmd.param1;
@@ -1475,9 +1483,100 @@ unsigned Commander::handleCommandActuatorTest(const vehicle_command_s &cmd)
 	if (actuator_test.timeout_ms == 0 || actuator_test.timeout_ms > 3000) {
 		actuator_test.timeout_ms = 3000;
 	}
-
 	_actuator_test_pub.publish(actuator_test);
+
 	return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+}
+
+//Additional Sections
+unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
+{
+
+	// PX4_INFO("Starting : Starting The Automatic Hardware Checking System");
+	// PX4_INFO("Param 1 : %f ",(double)cmd.param1);
+	// PX4_INFO("Param 2 : %f ",(double)cmd.param2);
+	// PX4_INFO("Param 3 : %f ",(double)cmd.param3);
+	// PX4_INFO("Param 4 : %f ",(double)cmd.param4);
+	// PX4_INFO("Param 5 : %f ",(double)cmd.param5);
+	// PX4_INFO("Param 6 : %f ",(double)cmd.param6);
+	// PX4_INFO("Param 7 : %f ",(double)cmd.param7);
+
+	actuator_test_s actuator_test{};
+	actuator_test.timestamp = hrt_absolute_time();
+
+	if (_arm_state_machine.isArmed() || (_safety.isButtonAvailable() && !_safety.isSafetyOff())) {
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
+	}
+
+	if (_param_com_mot_test_en.get() != 1) {
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
+	}
+
+	if ((double)cmd.param1 >= 0.999 && (double)cmd.param1 <= 1.001) {
+		PX4_INFO("IN TEST MODE : 1-MOTOR ONLY");
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+			PX4_ERR("PX4 Commander Timer Starto");
+		}
+		_actuator_test_pub.publish(actuator_test);
+		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		if (hrt_elapsed_time(& initialTime) > 3_s){
+			PX4_ERR("PX4 Commander Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	if ((double)cmd.param1 >= 1.999 && (double)cmd.param1 <= 2.001) {
+		PX4_INFO("IN TEST MODE : 2-SERVO ONLY");
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+			PX4_ERR("PX4 Commander Timer Starto");
+		}
+		_actuator_test_pub.publish(actuator_test);
+		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		if (hrt_elapsed_time(& initialTime) > 3_s){
+			PX4_ERR("PX4 Commander Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		_actuator_test_pub.publish(actuator_test);
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	if ((double)cmd.param1 >= 2.999 && (double)cmd.param1 <= 3.001) {
+		PX4_INFO("IN TEST MODE : 3-MOTOR THEN SERVO");
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+			PX4_ERR("PX4 Commander Timer Starto");
+		}
+		_actuator_test_pub.publish(actuator_test);
+		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		if (hrt_elapsed_time(& initialTime) > 3_s){
+			PX4_ERR("PX4 Commander Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		_actuator_test_pub.publish(actuator_test);
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	if ((double)cmd.param1 >= 3.999 && (double)cmd.param1 <= 4.001) {
+		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
+		initialTime_starter = true;
+		initialTime = 0;
+		_actuator_test_pub.publish(actuator_test);
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+	}
+
+	return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
 }
 
 void Commander::executeActionRequest(const action_request_s &action_request)

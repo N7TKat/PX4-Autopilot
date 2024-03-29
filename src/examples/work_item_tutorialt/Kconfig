@@ -1,0 +1,5 @@
+menuconfig EXAMPLES_WORK_ITEM_TUTORIALT
+	bool "work_item_tutorialT"
+	default n
+	---help---
+		Enable support for work_item_tutorialT

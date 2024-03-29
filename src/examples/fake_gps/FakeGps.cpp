@@ -40,7 +40,9 @@ FakeGps::FakeGps(double latitude_deg, double longitude_deg, float altitude_m) :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::lp_default),
 	_latitude(latitude_deg * 10e6),
 	_longitude(longitude_deg * 10e6),
-	_altitude(altitude_m * 10e2f)
+	_altitude(altitude_m * 10e2f),
+
+	_warning_check(true)
 {
 }
 
@@ -87,6 +89,19 @@ void FakeGps::Run()
 	sensor_gps.satellites_used = 14;
 	sensor_gps.timestamp = hrt_absolute_time();
 	_sensor_gps_pub.publish(sensor_gps);
+
+	if (_warning_check) {
+                //mavlink_log_info(_fakegps->get_mavlink_log_pub(), "Debug Warning\t");
+                mavlink_log_info(&_mavlink_log_pub, "Debug Warning\t");
+                events::send(events::ID("debug_info_test"), events::Log::Info, "Debug Info");
+                px4_usleep(5);
+                //mavlink_log_critical(_fakegps->get_mavlink_log_pub(), "Debug Critical\t");
+                mavlink_log_critical(&_mavlink_log_pub, "Debug Critical\t");
+                events::send(events::ID("debug_critical_test"),{events::Log::Critical, events::LogInternal::Info}, "Debug Critical");
+                tune_negative(true);
+                _warning_check = false;
+        }
+
 }
 
 int FakeGps::task_spawn(int argc, char *argv[])

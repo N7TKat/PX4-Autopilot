@@ -79,3 +79,12 @@ mc_pos_control start
 # Start Multicopter Land Detector.
 #
 land_detector start multicopter
+
+
+#
+#Start Work Item Auto Start Module.
+#
+if param compare -s WORK_AUTO_EN 1
+then
+       work_item_autostart start
+fi

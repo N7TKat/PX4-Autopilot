@@ -65,6 +65,14 @@
 
 #include <uavcan/protocol/param/ExecuteOpcode.hpp>
 
+/*include Servo Status uORB*/
+#include <uORB/topics/servo_status.h>
+#include <uORB/topics/servo_power_status.h>
+#include <uORB/topics/servo_power_report.h>
+#include <uORB/topics/servo_temp_status.h>
+#include <uORB/topics/servo_temp_report.h>
+
+
 //todo:The Inclusion of file_server_backend is killing
 // #include <sys/types.h> and leaving OK undefined
 # define OK 0
@@ -504,6 +512,12 @@ UavcanNode::init(uavcan::NodeID node_id, UAVCAN_DRIVER::BusEvent &bus_events)
 
 	if (ret < 0) {
 		return ret;
+	}
+
+	ret = _servo_controller.init(); /*Add servo*/
+
+	if (ret < 0) {
+			return ret;
 	}
 
 	ret = _hardpoint_controller.init();
@@ -960,10 +974,10 @@ void UavcanMixingInterfaceESC::mixerChanged()
 	_esc_controller.set_rotor_count(rotor_count);
 }
 
-bool UavcanMixingInterfaceServo::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
+bool UavcanMixingInterfaceServo::updateOutputs(bool stop_servos, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
 		unsigned num_control_groups_updated)
 {
-	_servo_controller.update_outputs(stop_motors, outputs, num_outputs);
+	_servo_controller.update_outputs(stop_servos, outputs, num_outputs);
 	return true;
 }
 
@@ -974,6 +988,23 @@ void UavcanMixingInterfaceServo::Run()
 	_mixing_output.updateSubscriptions(false);
 	pthread_mutex_unlock(&_node_mutex);
 }
+
+void UavcanMixingInterfaceServo::mixerChanged()
+{
+       int servo_count = 0;
+
+       for (unsigned i = 0; i < MAX_ACTUATORS; ++i) {
+               servo_count += _mixing_output.isFunctionSet(i);
+               if (i < servo_status_s::CONNECTED_SERVO_MAX) {
+                       _servo_controller.servo_status().servo[i].servo_function = (uint8_t)_mixing_output.outputFunction(i);
+               }
+       }
+
+       _servo_controller.set_servo_count(servo_count);
+       _servo_controller.set_servo_power_count(servo_count);
+       _servo_controller.set_servo_temp_count(servo_count);
+}
+
 
 void
 UavcanNode::print_info()

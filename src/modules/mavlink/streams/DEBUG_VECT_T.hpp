@@ -31,58 +31,55 @@
  *
  ****************************************************************************/
 
-#pragma once
+#ifndef DEBUG_VECT_T_HPP
+#define DEBUG_VECT_T_HPP
 
-#include <px4_platform_common/defines.h>
-#include <px4_platform_common/module.h>
-#include <px4_platform_common/module_params.h>
-#include <px4_platform_common/posix.h>
-#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
-#include <uORB/PublicationMulti.hpp>
-#include <uORB/Subscription.hpp>
-#include <uORB/topics/sensor_gps.h>
+#include <uORB/topics/esc_status.h>
+#include <uORB/topics/debug_vect.h>
 
-#include <systemlib/mavlink_log.h>
-#include <px4_platform_common/events.h>
-#include <px4_platform_common/log.h>
-#include "modules/commander/commander_helper.h"
-
-using namespace time_literals;
-class FakeGps : public ModuleBase<FakeGps>, public ModuleParams, public px4::ScheduledWorkItem
+class MavlinkStreamDebugVectT : public MavlinkStream
 {
 public:
-	FakeGps(double latitude_deg = 47.3953675, double longitude_deg = 8.5619795, float altitude_m = 30.1f);
+	static MavlinkStream *new_instance(Mavlink *mavlink) { return new MavlinkStreamDebugVectT(mavlink); }
 
-	~FakeGps() override = default;
+	static constexpr const char *get_name_static() { return "DEBUG_VECT_T"; }
+	static constexpr uint16_t get_id_static() { return MAVLINK_MSG_ID_DEBUG_VECT_T; }
 
-	/** @see ModuleBase */
-	static int task_spawn(int argc, char *argv[]);
+	const char *get_name() const override { return get_name_static(); }
+	uint16_t get_id() override { return get_id_static(); }
 
-	/** @see ModuleBase */
-	static int custom_command(int argc, char *argv[]);
-
-	/** @see ModuleBase */
-	static int print_usage(const char *reason = nullptr);
-
-	bool init();
-
-	orb_advert_t *get_mavlink_log_pub() { return &_mavlink_log_pub; }
+	unsigned get_size() override
+	{
+		static constexpr unsigned size_per_batch = MAVLINK_MSG_ID_DEBUG_VECT_T_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+		return _debug_vect_t_sub.advertised() ? size_per_batch * _number_of_batches : 0;
+	}
 
 private:
-	static constexpr uint32_t SENSOR_INTERVAL_US{1000000 / 5}; // 5 Hz
+	explicit MavlinkStreamDebugVectT(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
-	void Run() override;
+	uORB::Subscription _debug_vect_t_sub{ORB_ID(debug_vect_t)};
+	uint8_t _number_of_batches{0};
 
-	uORB::PublicationMulti<sensor_gps_s> _sensor_gps_pub{ORB_ID(sensor_gps)};
+	bool send() override
+	{
+		debug_vect_t_s dbg_vect_t;
 
-	int32_t _latitude{296603018};   // Latitude in 1e-7 degrees
-	int32_t _longitude{-823160500}; // Longitude in 1e-7 degrees
-	int32_t _altitude{30100};       // Altitude in 1e-3 meters above MSL, (millimetres)
+		if (_debug_vect_t_sub.update(&dbg_vect_t)) {
+			mavlink_dbg_vect_t_t msg{};
+			msg.time_usec = deg_vect_t.timestamp
+			msg.name = "Debug Vect form Mavlink"
+			msg.x = dbg_vect_t.x
+			msg.y = dbg_vect_t.y
+			msg.z = dbg_vect_t.z
 
-	orb_advert_t    _mavlink_log_pub{nullptr};
+			mavlink_msg_dbg_vect_t_send_struct(_mavlink->get_channel(), &msg);
+			}
 
-        bool _warning_check{true};
+			return true;
+		}
 
-protected:
-        FakeGps *_fakegps{nullptr};
+		return false;
+	}
 };
+
+#endif // ESC_INFO_HPP
