@@ -1501,8 +1501,12 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 	// PX4_INFO("Param 6 : %f ",(double)cmd.param6);
 	// PX4_INFO("Param 7 : %f ",(double)cmd.param7);
 
-	actuator_test_s actuator_test{};
-	actuator_test.timestamp = hrt_absolute_time();
+
+	automatic_hardware_testing_s automatic_hardware_testing{};
+	automatic_hardware_testing.timestamp = hrt_absolute_time();
+
+	is_in_progress = automatic_hardware_testing.inprogress;
+	is_success = automatic_hardware_testing.success;
 
 	if (_arm_state_machine.isArmed() || (_safety.isButtonAvailable() && !_safety.isSafetyOff())) {
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
@@ -1513,20 +1517,31 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 	}
 
 	if ((double)cmd.param1 >= 0.999 && (double)cmd.param1 <= 1.001) {
-		PX4_INFO("IN TEST MODE : 1-MOTOR ONLY");
+		//PX4_INFO("IN TEST MODE : 1-MOTOR ONLY");
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
-			PX4_ERR("PX4 Commander Timer Starto");
+			//PX4_ERR("PX4 Commander Timer Start");
 		}
-		_actuator_test_pub.publish(actuator_test);
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY;
+		if((is_in_progress && is_success) == false){
+			automatic_hardware_testing.inprogress = true;
+			automatic_hardware_testing.success = false;
+			//PX4_WARN(" inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
+			_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
+
+		}
+		//automatic_hardware_testing.success = false;
 		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
-		if (hrt_elapsed_time(& initialTime) > 3_s){
-			PX4_ERR("PX4 Commander Timeout");
+		if (hrt_elapsed_time(& initialTime) > 5_s){
+			PX4_WARN("PX4 Exit Test due to Timeout");
 			initialTime_starter = true;
 			initialTime = 0;
+			automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_RELEASE_ACTUATOR;
+			_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 		}
+		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
 
@@ -1537,7 +1552,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = hrt_absolute_time();
 			PX4_ERR("PX4 Commander Timer Starto");
 		}
-		_actuator_test_pub.publish(actuator_test);
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_SERVO_ONLY;
+		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 3_s){
 			PX4_ERR("PX4 Commander Timeout");
@@ -1545,7 +1561,6 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = 0;
 			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 		}
-		_actuator_test_pub.publish(actuator_test);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
 
@@ -1556,7 +1571,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = hrt_absolute_time();
 			PX4_ERR("PX4 Commander Timer Starto");
 		}
-		_actuator_test_pub.publish(actuator_test);
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_THEN_SERVO;
+		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 3_s){
 			PX4_ERR("PX4 Commander Timeout");
@@ -1564,7 +1580,6 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = 0;
 			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 		}
-		_actuator_test_pub.publish(actuator_test);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
 
@@ -1572,10 +1587,10 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
 		initialTime_starter = true;
 		initialTime = 0;
-		_actuator_test_pub.publish(actuator_test);
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_STOP;
+		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 	}
-
 	return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
 }
 

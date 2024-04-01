@@ -54,10 +54,15 @@ px4_add_library(mixer_module
 	functions/FunctionParachute.hpp
 	functions/FunctionServos.hpp
 
+	functions/FunctionServosSineWave.hpp
+
 	actuator_test.cpp
 	actuator_test.hpp
 	mixer_module.cpp
 	mixer_module.hpp
+
+	ActuatorValueMix.cpp
+	ActuatorValueMix.hpp
 	)
 
 add_dependencies(mixer_module output_functions_header)

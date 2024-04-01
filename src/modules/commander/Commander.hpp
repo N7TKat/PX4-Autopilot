@@ -83,6 +83,7 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vtol_vehicle_status.h>
+#include <uORB/topics/automatic_hardware_testing.h>
 
 using math::constrain;
 using systemlib::Hysteresis;
@@ -281,6 +282,7 @@ private:
 	uORB::Subscription					_vehicle_command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription					_vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription					_vtol_vehicle_status_sub{ORB_ID(vtol_vehicle_status)};
+	uORB::Subscription 					_automatic_hardware_testing_sub{ORB_ID(automatic_hardware_testing)};
 
 	uORB::SubscriptionInterval				_parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
@@ -300,6 +302,8 @@ private:
 	uORB::Publication<vehicle_command_ack_s>		_vehicle_command_ack_pub{ORB_ID(vehicle_command_ack)};
 	uORB::Publication<vehicle_control_mode_s>		_vehicle_control_mode_pub{ORB_ID(vehicle_control_mode)};
 	uORB::Publication<vehicle_status_s>			_vehicle_status_pub{ORB_ID(vehicle_status)};
+
+	uORB::Publication<automatic_hardware_testing_s>		_automatic_hardware_testing_pub{ORB_ID(automatic_hardware_testing)};
 
 	orb_advert_t _mavlink_log_pub{nullptr};
 
@@ -337,4 +341,9 @@ private:
 	//Additional Sections
 	bool initialTime_starter{true};
 	hrt_abstime initialTime{0};
+
+	bool is_in_progress{false};
+	bool is_success{false};
+
+
 };

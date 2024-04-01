@@ -429,39 +429,362 @@ bool MixingOutput::update()
 		_interface.ScheduleDelayed(50_ms);
 	}
 
-	// check for actuator test
-	_actuator_test.update(_max_num_outputs, _param_thr_mdl_fac.get());
+	automatic_hardware_testing_s automatic_hardware_testing;
+	// waiting for automatic hardware testing command
+	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
+		ACTUATOR_RUN = true;
+	}
 
-	// get output values
-	float outputs[MAX_ACTUATORS];
-	bool all_disabled = true;
-	_reversible_mask = 0;
+	if(ACTUATOR_RUN){
+		PX4_ERR(" ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
+		//PX4_ERR(" inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
+		switch (automatic_hardware_testing.test_mode){
+			case 0:
+				//reset motor_test
+				motor_test = false;
+				do_next_motor = true;
 
-	for (int i = 0; i < _max_num_outputs; ++i) {
-		if (_functions[i]) {
-			all_disabled = false;
+				//reset servo_test
+				servo_test = false;
+				do_next_servo = true;
 
-			if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
-				outputs[i] = _functions[i]->value(_function_assignment[i]);
+				//ACTUATOR_SHOULD_EXIT = true;
+				break;
+			case 1:
+				//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
+				motor_test = true;
+				ACTUATOR_RUN = false;
+				PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
+				break;
+			case 2:
+				PX4_INFO("AUTO_PFL_MODE 2");
+				servo_test = true;
+				ACTUATOR_RUN = false;
+				break;
+			case 3:
+				PX4_INFO("AUTO_PFL_MODE 3");
+				//motor_test = true;
+				//servo_test = true;
+				break;
+			case 4:
+				PX4_INFO("AUTO_PFL_MODE 4");
+				servo_test = false;
+				motor_test = false;
+				ACTUATOR_RUN = true;
+				break;
+			default:
+				//reset motor_test
+				motor_test = false;
+				do_next_motor = true;
+				//reset servo_test
+				servo_test = false;
+				do_next_servo = true;
+				PX4_INFO("Default Mode : *****************************************************************************************");
+				//ACTUATOR_SHOULD_EXIT = true;
+				break;
+		}
 
-			} else {
+	}
+
+
+	//fake QGC Start Test
+	if (!_param_auto_pfl_en.get()){
+		// PX4_WARN("AUTO HW TEST params : disbled");			//(_param_auto_pfl_en.get() == 0)
+		_in_actuator_test_mode = false;
+	}									//_param_auto_pfl_en Disable
+	else {									//(_param_auto_pfl_en.get() == 1)
+		_in_actuator_test_mode = true;
+		motor_run_time_ms = _param_auto_pfl_mt_time.get()*1000;
+		servo_loop = _param_auto_pfl_sv_loop.get();
+	}									//_param_auto_pfl_en Enable
+
+		/*
+		// Default actuator test update
+
+		_actuator_test.update(_max_num_outputs, _param_thr_mdl_fac.get());
+		*/
+
+	// check for actuator test (Default)
+	if (!_in_actuator_test_mode){
+		_actuator_test.update(_max_num_outputs, _param_thr_mdl_fac.get());
+
+		// get output values
+		float outputs[MAX_ACTUATORS];
+		bool all_disabled = true;
+		_reversible_mask = 0;
+
+		for (int i = 0; i < _max_num_outputs; ++i) {
+
+			if (_functions[i]) {
+				all_disabled = false;
+				//PX4_WARN("Hi");
+				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+				if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+					outputs[i] = _functions[i]->value(_function_assignment[i]);
+
+				} else {
+					outputs[i] = NAN;
+				}
+				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+				_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
+
+			} else {	//not use actuator (Like servo 2,3,...,max servo)
 				outputs[i] = NAN;
 			}
 
-			_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
-
-		} else {
-			outputs[i] = NAN;
-		}
-	}
-
-	if (!all_disabled) {
-		if (!_armed.armed && !_armed.manual_lockdown) {
-			_actuator_test.overrideValues(outputs, _max_num_outputs);
 		}
 
-		limitAndUpdateOutputs(outputs, has_updates);
-	}
+		if (!all_disabled) {
+			if (!_armed.armed && !_armed.manual_lockdown) {
+					_actuator_test.overrideValues(outputs, _max_num_outputs);
+				}
+
+			limitAndUpdateOutputs(outputs, has_updates);
+		}
+	}//_param_auto_pfl_en Disable
+
+	// check for actuator test
+	if (_in_actuator_test_mode){
+		//PX4_WARN("in actuator test mode");
+		_actuator_value_mix.update(_max_num_outputs,
+						 _param_thr_mdl_fac.get(),
+						 _param_auto_pfl_mode.get(),
+						 _param_auto_pfl_sv_loop.get(),
+						 _param_auto_pfl_mt_time.get(),
+						 _param_auto_pfl_en.get(),
+						 in_sequence_num,
+						 servo_max);
+
+
+		// get output values
+		float outputs[MAX_ACTUATORS];
+		bool all_disabled = true;
+		_reversible_mask = 0;
+
+		for (int i = 0; i < _max_num_outputs; ++i) {
+
+			if(automatic_hardware_testing.test_mode == 1)
+			{
+				if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_MOTOR1)&&(int)_function_assignment[i]<actuator_test_s::FUNCTION_SERVO1)
+				{
+					if (_functions[i]) {
+						all_disabled = false;
+						//PX4_WARN("Hi");
+						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+						if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+							outputs[i] = _functions[i]->value(_function_assignment[i]);
+
+						} else {
+							outputs[i] = NAN;
+						}
+						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+						_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
+
+					} else {	//not use actuator (Like servo 2,3,...,max servo)
+						outputs[i] = NAN;
+					}
+				}
+			}
+
+			if(automatic_hardware_testing.test_mode == 2)
+			{
+				if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_SERVO1)&&(int)_function_assignment[i]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS))
+				{
+					if (_functions[i]) {
+						all_disabled = false;
+						//PX4_WARN("Hi");
+						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+						if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+							outputs[i] = _functions[i]->value(_function_assignment[i]);
+
+						} else {
+							outputs[i] = NAN;
+						}
+						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+						_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
+
+					} else {	//not use actuator (Like servo 2,3,...,max servo)
+						outputs[i] = NAN;
+					}
+				}
+			}
+
+		}
+
+		is_in_progress = automatic_hardware_testing.inprogress;
+		//is_success = automatic_hardware_testing.success;
+
+		if (!all_disabled) {
+			if (!_armed.armed && !_armed.manual_lockdown) {
+				//PX4_ERR(" motor_test is : %s *******************************************", motor_test ? "true" : "false");
+				//_actuator_value_mix.overrideValues(outputs, _max_num_outputs, _param_auto_pfl_mode.get(),motor_oder[1]);
+				//PX4_ERR("actuator_test");
+				if(motor_test){
+					//PX4_ERR("actuator_test : motor_test");
+
+					if(do_next_motor){
+						do_motor_sequence = true;
+						//IN_MOTOR_SEQUENCE = true;
+						do_next_motor = false;
+						motor_sequence_delay = hrt_absolute_time();
+						in_sequence_num = 1;
+
+						//PX4_INFO("DO Test MOTOR [%i]",MOTOR_ID+1);
+					}
+
+					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) < ((double)motor_run_time_ms*1000))){
+						_actuator_value_mix.overrideValues(outputs, _max_num_outputs, _param_auto_pfl_mode.get(),motor_oder[motor_id],false);
+
+						//PX4_WARN("[%i]%.0f ms",in_sequence_num,(double)(hrt_absolute_time()-in_motor_sequence_delay)/1000);
+						in_motor_sequence_delay = hrt_absolute_time();
+						++in_sequence_num;
+							// PX4_ERR("outputs[MAX_ACTUATORS] = %5.2f[0],_functions = %s, _function_assignment[0] = %.2f",(double)outputs[0],_functions[0] ? "true" : "false",(double)_function_assignment[0]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[1],_functions = %s, _function_assignment[1] = %.2f",(double)outputs[1],_functions[1] ? "true" : "false",(double)_function_assignment[1]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[2],_functions = %s, _function_assignment[2] = %.2f",(double)outputs[2],_functions[2] ? "true" : "false",(double)_function_assignment[2]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[3],_functions = %s, _function_assignment[3] = %.2f",(double)outputs[3],_functions[3] ? "true" : "false",(double)_function_assignment[3]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[4],_functions = %s, _function_assignment[4] = %.2f",(double)outputs[4],_functions[4] ? "true" : "false",(double)_function_assignment[4]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[5],_functions = %s, _function_assignment[5] = %.2f",(double)outputs[5],_functions[5] ? "true" : "false",(double)_function_assignment[5]);
+
+							// PX4_INFO("Test MOTOR [%i] at SEQUENCE[%i]",MOTOR_ID+1,MOTOR_SEQUENCE);
+					}
+
+
+					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) > ((double)motor_run_time_ms*1000))){
+						do_motor_sequence = false;
+						do_next_motor_delay_timer = true;
+						do_next_motor_delay = hrt_absolute_time();
+
+					}
+
+
+					if((do_next_motor_delay_timer)&&(hrt_elapsed_time(& do_next_motor_delay) > 5_s)){
+						do_next_motor_delay_timer = false;
+						do_next_motor = true;
+						++motor_id;
+						if(motor_id<motor_max){
+							PX4_WARN("Test Next MOTOR [%i] ",motor_id+1);
+							PX4_WARN("Test Next MOTOR [%i] ",motor_id+1);
+							PX4_ERR(" motor_test is : %s", motor_test ? "true" : "false");
+							PX4_ERR(" is_in_progress is : %s", is_in_progress ? "true" : "false");
+						}
+
+					}
+
+					if(motor_id>=motor_max){
+						motor_test = false;
+						motor_test_done = true;
+						automatic_hardware_testing.inprogress = false;
+						automatic_hardware_testing.success = true;
+						PX4_INFO("****************************************");
+						PX4_INFO("Finish");
+						PX4_ERR(" motor_test is : %s", motor_test ? "true" : "false");
+
+						//Reset
+						do_next_motor = true;
+						do_motor_sequence = false;
+						do_next_motor_delay_timer = false;
+						motor_id = 0;
+						in_motor_sequence_delay = 0;
+
+
+						// if(_param_auto_pfl_mode.get()==1){
+						// 	PX4_INFO("EXIT ACTUATOR MOTOR TEST");
+						// 	//ACTUATOR_SHOULD_EXIT = true;
+						// }
+					}
+					_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
+					//PX4_ERR(" Test motor | inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
+					//PX4_ERR(" Test motor | success is : %s", automatic_hardware_testing.success ? "true" : "false");
+
+
+				}
+
+				if(servo_test){
+					//PX4_ERR("motor_test");
+					if(do_next_servo){
+						do_servo_sequence = true;
+						//IN_MOTOR_SEQUENCE = true;
+						do_next_servo = false;
+						servo_sequence_delay= hrt_absolute_time();
+						in_sequence_num = 1;
+
+						//PX4_INFO("DO Test MOTOR [%i]",MOTOR_ID+1);
+					}
+
+					if((do_servo_sequence)&&(hrt_elapsed_time(& servo_sequence_delay) < ((long unsigned int)(servo_loop_time_ms*1000*servo_loop)))){
+						_actuator_value_mix.overrideValues(outputs, _max_num_outputs, _param_auto_pfl_mode.get(),servo_oder[servo_id],true);
+
+						PX4_WARN("[%i]%.0f ms",in_sequence_num,(double)(hrt_absolute_time()-in_servo_sequence_delay)/1000);
+						in_servo_sequence_delay = hrt_absolute_time();
+						++in_sequence_num;
+							PX4_ERR("outputs[MAX_ACTUATORS] = %5.2f[0],_functions = %s, _function_assignment[0] = %.2f",(double)outputs[0],_functions[0] ? "true" : "false",(double)_function_assignment[0]);
+							PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[1],_functions = %s, _function_assignment[1] = %.2f",(double)outputs[1],_functions[1] ? "true" : "false",(double)_function_assignment[1]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[2],_functions = %s, _function_assignment[2] = %.2f",(double)outputs[2],_functions[2] ? "true" : "false",(double)_function_assignment[2]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[3],_functions = %s, _function_assignment[3] = %.2f",(double)outputs[3],_functions[3] ? "true" : "false",(double)_function_assignment[3]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[4],_functions = %s, _function_assignment[4] = %.2f",(double)outputs[4],_functions[4] ? "true" : "false",(double)_function_assignment[4]);
+							// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[5],_functions = %s, _function_assignment[5] = %.2f",(double)outputs[5],_functions[5] ? "true" : "false",(double)_function_assignment[5]);
+
+							// PX4_INFO("Test MOTOR [%i] at SEQUENCE[%i]",MOTOR_ID+1,MOTOR_SEQUENCE);
+					}
+
+							//((double)motor_run_time_ms*1000) >> servo sequence time
+					if((do_servo_sequence)&&(hrt_elapsed_time(& servo_sequence_delay) > ((long unsigned int)(servo_loop_time_ms*1000*servo_loop)))){
+						do_servo_sequence = false;
+						do_next_servo_delay_timer = true;
+						do_next_servo_delay = hrt_absolute_time();
+
+					}
+
+
+					if((do_next_servo_delay_timer)&&(hrt_elapsed_time(& do_next_servo_delay) > 5_s)){
+						do_next_servo_delay_timer = false;
+						do_next_servo = true;
+						++servo_id;
+						if(servo_id<servo_max){
+							PX4_INFO("Test Next Servo [%i] ",servo_id+1);
+						}
+
+					}
+
+					if(servo_id>=servo_max){
+						servo_test = false;
+						servo_test_done = true;
+						PX4_INFO("****************************************");
+						PX4_INFO("Finish");
+
+						//Reset
+						do_next_servo = true;
+						do_servo_sequence = false;
+						do_next_servo_delay_timer = false;
+						servo_id = 0;
+						in_servo_sequence_delay = 0;
+
+						//MOTOR_SEQUENCE_DELAY_TIMER = false;
+						//IN_MOTOR_SEQUENCE = false;
+
+						if(_param_auto_pfl_mode.get()==2){
+							PX4_INFO("EXIT ACTUATOR SERVO TEST");
+							//ACTUATOR_SHOULD_EXIT = true;
+						}
+					}
+					//motor_test = false;
+					//PX4_ERR("motor_test = false");
+				}
+
+			}
+
+			limitAndUpdateOutputs(outputs, has_updates);
+			// PX4_ERR("outputs[MAX_ACTUATORS] = %5.2f[0],_functions = %s, _function_assignment[0] = %.2f",(double)outputs[0],_functions[0] ? "true" : "false",(double)_function_assignment[0]);
+			// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[1],_functions = %s, _function_assignment[1] = %.2f",(double)outputs[1],_functions[1] ? "true" : "false",(double)_function_assignment[1]);
+			// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[2],_functions = %s, _function_assignment[2] = %.2f",(double)outputs[2],_functions[2] ? "true" : "false",(double)_function_assignment[2]);
+			// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[3],_functions = %s, _function_assignment[3] = %.2f",(double)outputs[3],_functions[3] ? "true" : "false",(double)_function_assignment[3]);
+			// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[4],_functions = %s, _function_assignment[4] = %.2f",(double)outputs[4],_functions[4] ? "true" : "false",(double)_function_assignment[4]);
+			// PX4_WARN("outputs[MAX_ACTUATORS] = %5.2f[5],_functions = %s, _function_assignment[5] = %.2f",(double)outputs[5],_functions[5] ? "true" : "false",(double)_function_assignment[5]);
+		}
+
+	}//_param_auto_pfl_en Enable
+
+
 
 	return true;
 }
