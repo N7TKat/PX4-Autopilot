@@ -326,10 +326,10 @@ private:
 	bool ACTUATOR_RUN{false};
 
 	//MOTOR LOGIC
-	bool motor_test{false}; //FUCTION MOTOR motor_test_done
-	bool motor_test_done{false};
-	bool do_next_motor{true};
-	bool do_motor_sequence{false};
+	bool motor_test{false}; 		//Actuator_Test Logic Function : Do motor test
+	bool motor_test_is_done{false};	//Actuator_Test Logic Function : Done all motor in this test
+	bool do_next_motor{true};		//Actuator_Test Logic Function : Do next motor in this test
+	bool do_motor_sequence{false};	//Actuator_Test Logic Function : Do next sequence in this motor test
 	bool in_motor_sequence{false};
 	bool do_next_motor_delay_timer{false};
 	bool motor_sequence_delay_timer{false};
@@ -378,4 +378,9 @@ private:
 
 	int loop_num = 1;
 	int loop_num_2 = 1;
+
+	bool is_motor_function{false};
+	bool is_servo_function{false};
+	hrt_abstime update_timeout{0};
+	bool done_all_motor{false};
 };
