@@ -383,4 +383,6 @@ private:
 	bool is_servo_function{false};
 	hrt_abstime update_timeout{0};
 	bool done_all_motor{false};
+	bool timeout_timer{false};
+
 };

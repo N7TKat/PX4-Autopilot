@@ -1588,7 +1588,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
 		initialTime_starter = true;
 		initialTime = 0;
-		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_STOP;
+		automatic_hardware_testing.test_mode_int = 4;
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 	}

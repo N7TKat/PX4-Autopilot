@@ -446,20 +446,20 @@ bool MixingOutput::update()
 		servo_loop = _param_auto_pfl_sv_loop.get();
 	}
 
-	is_motor_function = (bool)(((int)_function_assignment[0]>=actuator_test_s::FUNCTION_MOTOR1) && ((int)_function_assignment[0]<actuator_test_s::FUNCTION_SERVO1));	
+	is_motor_function = (bool)(((int)_function_assignment[0]>=actuator_test_s::FUNCTION_MOTOR1) && ((int)_function_assignment[0]<actuator_test_s::FUNCTION_SERVO1));
 	is_servo_function = (bool)(((int)_function_assignment[0]>= actuator_test_s::FUNCTION_SERVO1) && ((int)_function_assignment[0]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS)));
-	
-	PX4_ERR(" is_motor_function is : %s", is_motor_function ? "true" : "false");
-	PX4_ERR(" is_servo_function is : %s", is_servo_function ? "true" : "false");
-	PX4_ERR("ACTUATOR_RUN loop = %i: ********************************************",loop_num_2);
+
+	// PX4_ERR(" is_motor_function is : %s", is_motor_function ? "true" : "false");
+	// PX4_ERR(" is_servo_function is : %s", is_servo_function ? "true" : "false");
+	// PX4_ERR("ACTUATOR_RUN loop = %i: ********************************************",loop_num_2);
 	++loop_num_2;
-	
+
 	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && ((is_motor_function)||(is_servo_function)))
 	{	/*if automatic_hardware_testing is update and this is motor and servo fuction*/
 
 		/*Stamp update time*/
 		update_timeout = hrt_absolute_time();
-
+		timeout_timer = true;
 				// PX4_ERR("1: ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
 				// PX4_ERR("2: test_mode is : %d", automatic_hardware_testing.test_mode_int);
 				// PX4_WARN("3: _function_assignment[i] = %.2f ***************",(double)_function_assignment[1]);
@@ -485,9 +485,8 @@ bool MixingOutput::update()
 		{
 			//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
 			motor_test = true;
-
 			//PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
-			PX4_ERR("Motor loop = %i: ***************",loop_num);
+			//PX4_ERR("Motor loop = %i: ***************",loop_num);
 			++loop_num;
 		}
 
@@ -508,13 +507,14 @@ bool MixingOutput::update()
 			//servo_test = true;
 		}
 
-		else if ((automatic_hardware_testing.test_mode_int == 4)&&((is_motor_function)||(is_servo_function)))
+		else if ((automatic_hardware_testing.test_mode_int == 4) && ((is_motor_function)||(is_servo_function)))
 		{
 			PX4_INFO("AUTO_PFL_MODE 4");
 			servo_test = false;
 			motor_test = false;
+			PX4_INFO("4.4: I NA SEE");
 		}
-		
+
 		else{
 			//reset motor_test
 			motor_test = false;
@@ -525,9 +525,9 @@ bool MixingOutput::update()
 		}
 
 	}
-	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && (hrt_elapsed_time(& update_timeout) > 12_ms) && ((is_motor_function)||(is_servo_function))){
+	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && (timeout_timer) && (hrt_elapsed_time(& update_timeout) > 12_ms) && ((is_motor_function)||(is_servo_function))){
 		/*auto reset*/
-		//PX4_WARN("AUTO HW TEST params : disbled")
+		PX4_WARN("AUTO RESET TRIGGERED : NO Update");
 
 		//reset motor_test
 		motor_test = false;
@@ -536,6 +536,7 @@ bool MixingOutput::update()
 		//reset servo_test
 		servo_test = false;
 		do_next_servo = true;
+		timeout_timer = false;
 
 	}
 
@@ -586,7 +587,7 @@ bool MixingOutput::update()
 		update and generate actuator value to motor and servo
 	*/
 	if (_in_actuator_test_mode){
-		
+
 		/*update parameter to ActuatorValueMix Function*/
 		//PX4_WARN("in actuator test mode");
 		_actuator_value_mix.update(_max_num_outputs,
@@ -599,7 +600,7 @@ bool MixingOutput::update()
 						 servo_max);
 
 
-		/*Actuator_Test Logic Function : Get output values*/ 
+		/*Actuator_Test Logic Function : Get output values*/
 		float outputs[MAX_ACTUATORS];
 		bool all_disabled = true;
 		_reversible_mask = 0;
@@ -664,8 +665,8 @@ bool MixingOutput::update()
 				//PX4_ERR(" motor_test is : %s *******************************************", motor_test ? "true" : "false");
 				//_actuator_value_mix.overrideValues(outputs, _max_num_outputs, _param_auto_pfl_mode.get(),motor_oder[1]);
 				//PX4_ERR("actuator_test");
-				
-				/*Actuator_Test Logic Function : Do motor test*/ 
+
+				/*Actuator_Test Logic Function : Do motor test*/
 				if((motor_test)&&(!done_all_motor)&&(is_motor_function)){
 					//PX4_ERR("actuator_test : motor_test");
 
@@ -685,7 +686,7 @@ bool MixingOutput::update()
 						PX4_INFO("DO Test MOTOR [%i]",motor_id+1);
 					}
 
-					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) < ((double)motor_run_time_ms*1000))){		
+					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) < ((double)motor_run_time_ms*1000))){
 						/*When do_motor_sequence is true ,Do this Command Until motor_run_time */
 
 						/*motor_oder[motor_id]*/
@@ -694,7 +695,7 @@ bool MixingOutput::update()
 
 						/*Time Stamped*/
 						//in_motor_sequence_delay = hrt_absolute_time();
-						
+
 						/*Debug*/
 						//PX4_WARN("[%i]%.0f ms",in_sequence_num,(double)(hrt_absolute_time()-in_motor_sequence_delay)/1000);
 						// PX4_ERR("outputs[MAX_ACTUATORS] = %5.2f[0],_functions = %s, _function_assignment[0] = %.2f",(double)outputs[0],_functions[0] ? "true" : "false",(double)_function_assignment[0]);
@@ -729,13 +730,13 @@ bool MixingOutput::update()
 						do_next_motor_delay_timer = false;
 
 						/*Open Next logic*/
-						
-						if(motor_id<motor_max){
+
+						if(motor_id < (motor_max - 1)){
 							do_next_motor = true;
 							++motor_id;
-							
+
 							/*Status*/
-							PX4_WARN("Test Next MOTOR [%i] ",motor_id+1);
+							PX4_WARN("Test Next MOTOR [%i] ", motor_id + 1);
 
 						}
 						else{ //(motor_id>=motor_max)
