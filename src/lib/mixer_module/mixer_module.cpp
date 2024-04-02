@@ -431,57 +431,87 @@ bool MixingOutput::update()
 
 	automatic_hardware_testing_s automatic_hardware_testing;
 	// waiting for automatic hardware testing command
-	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
-		ACTUATOR_RUN = true;
-	}
+	// if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
+	// 	ACTUATOR_RUN = true;
+	// }
 
-	if(ACTUATOR_RUN){
-		PX4_ERR(" ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
+
+	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && ((
+			((int)_function_assignment[0]>=actuator_test_s::FUNCTION_MOTOR1)
+				&& ((int)_function_assignment[0]<actuator_test_s::FUNCTION_SERVO1))
+					||
+					(((int)_function_assignment[0]>= actuator_test_s::FUNCTION_SERVO1)
+						&&
+							((int)_function_assignment[0]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS)))))
+	{
+
+		PX4_ERR("1: ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
+		PX4_ERR("2: test_mode is : %d", automatic_hardware_testing.test_mode_int);
+		PX4_WARN("3: _function_assignment[i] = %.2f ***************",(double)_function_assignment[1]);
+		PX4_ERR("ACTUATOR_RUN loop = %i: ***************",loop_num_2);
+			++loop_num_2;
 		//PX4_ERR(" inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
-		switch (automatic_hardware_testing.test_mode){
-			case 0:
-				//reset motor_test
-				motor_test = false;
-				do_next_motor = true;
+		if (((int)automatic_hardware_testing.test_mode_int == 0)&&(_automatic_hardware_testing_sub.update(&automatic_hardware_testing))){
+			//reset motor_test
+			motor_test = false;
+			do_next_motor = true;
 
-				//reset servo_test
-				servo_test = false;
-				do_next_servo = true;
+			//reset servo_test
+			servo_test = false;
+			do_next_servo = true;
 
-				//ACTUATOR_SHOULD_EXIT = true;
-				break;
-			case 1:
-				//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
-				motor_test = true;
-				ACTUATOR_RUN = false;
-				PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
-				break;
-			case 2:
-				PX4_INFO("AUTO_PFL_MODE 2");
-				servo_test = true;
-				ACTUATOR_RUN = false;
-				break;
-			case 3:
-				PX4_INFO("AUTO_PFL_MODE 3");
-				//motor_test = true;
-				//servo_test = true;
-				break;
-			case 4:
-				PX4_INFO("AUTO_PFL_MODE 4");
-				servo_test = false;
-				motor_test = false;
-				ACTUATOR_RUN = true;
-				break;
-			default:
-				//reset motor_test
-				motor_test = false;
-				do_next_motor = true;
-				//reset servo_test
-				servo_test = false;
-				do_next_servo = true;
-				PX4_INFO("Default Mode : *****************************************************************************************");
-				//ACTUATOR_SHOULD_EXIT = true;
-				break;
+			//ACTUATOR_SHOULD_EXIT = true;
+			PX4_INFO("4.1: I NA SOON");
+		}
+		else if ((int)automatic_hardware_testing.test_mode_int == 1){
+			PX4_ERR("4.2: I NA HEE 481");
+		}
+		else if ((automatic_hardware_testing.test_mode_int == 1)&&(_automatic_hardware_testing_sub.update(&automatic_hardware_testing))&&
+			(((int)_function_assignment[1]>=actuator_test_s::FUNCTION_MOTOR1)
+				&& ((int)_function_assignment[1]<actuator_test_s::FUNCTION_MOTOR1+actuator_test_s::MAX_NUM_MOTORS)))
+		{
+			//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
+			motor_test = true;
+			ACTUATOR_RUN = false;
+			//PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
+			PX4_ERR("Motor loop = %i: ***************",loop_num);
+			++loop_num;
+		}
+		else if ((automatic_hardware_testing.test_mode_int == 2)&&(_automatic_hardware_testing_sub.update(&automatic_hardware_testing))&&(((int)_function_assignment[0]>= actuator_test_s::FUNCTION_SERVO1)
+						&&
+							((int)_function_assignment[0]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS))))
+		{
+			PX4_INFO("AUTO_PFL_MODE 2");
+			servo_test = true;
+			ACTUATOR_RUN = false;
+			// PX4_ERR("Servo loop = %i: ***************",loop_num);
+			// ++loop_num_2;
+		}
+		else if ((automatic_hardware_testing.test_mode_int == 3)&&(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)))
+		{
+			PX4_INFO("AUTO_PFL_MODE 3");
+			//motor_test = true;
+			//servo_test = true;
+		}
+		else if ((automatic_hardware_testing.test_mode_int == 4)&&(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)))
+		{
+			PX4_INFO("AUTO_PFL_MODE 4");
+			servo_test = false;
+			motor_test = false;
+			ACTUATOR_RUN = true;
+		}
+		else{
+			//reset motor_test
+			motor_test = false;
+			do_next_motor = true;
+			//reset servo_test
+			servo_test = false;
+			do_next_servo = true;
+			// PX4_WARN("Default Mode loop = %i:  _function_assignment[i] = %.2f ***************",loop_num_2,(double)_function_assignment[1]);
+			// ++loop_num_2;
+			//ACTUATOR_SHOULD_EXIT = true;
+
+			ACTUATOR_RUN = false;
 		}
 
 	}

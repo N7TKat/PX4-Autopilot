@@ -323,7 +323,7 @@ private:
 
 	//PFL_MODE CASE
 	bool ACTUATOR_SHOULD_EXIT{false};
-	bool ACTUATOR_RUN{true};
+	bool ACTUATOR_RUN{false};
 
 	//MOTOR LOGIC
 	bool motor_test{false}; //FUCTION MOTOR motor_test_done
@@ -376,4 +376,6 @@ private:
 	bool is_in_progress{false};
 	bool is_success{false};
 
+	int loop_num = 1;
+	int loop_num_2 = 1;
 };

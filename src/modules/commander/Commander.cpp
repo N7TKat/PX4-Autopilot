@@ -1492,7 +1492,7 @@ unsigned Commander::handleCommandActuatorTest(const vehicle_command_s &cmd)
 unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 {
 
-	// PX4_INFO("Starting : Starting The Automatic Hardware Checking System");
+	//PX4_INFO("Starting : Starting The Automatic Hardware Checking System");
 	// PX4_INFO("Param 1 : %f ",(double)cmd.param1);
 	// PX4_INFO("Param 2 : %f ",(double)cmd.param2);
 	// PX4_INFO("Param 3 : %f ",(double)cmd.param3);
@@ -1523,7 +1523,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = hrt_absolute_time();
 			//PX4_ERR("PX4 Commander Timer Start");
 		}
-		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY;
+		automatic_hardware_testing.test_mode_int = (int) 1;
+		//automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY;
 		if((is_in_progress && is_success) == false){
 			automatic_hardware_testing.inprogress = true;
 			automatic_hardware_testing.success = false;
@@ -1532,7 +1533,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 
 		}
 		//automatic_hardware_testing.success = false;
-		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 5_s){
 			PX4_WARN("PX4 Exit Test due to Timeout");
 			initialTime_starter = true;
