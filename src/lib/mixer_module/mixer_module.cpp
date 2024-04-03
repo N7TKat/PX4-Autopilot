@@ -456,7 +456,7 @@ bool MixingOutput::update()
 
 	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && ((is_motor_function)||(is_servo_function)))
 	{	/*if automatic_hardware_testing is update and this is motor and servo fuction*/
-
+		// PX4_ERR("Test mode at Mixer : %i",automatic_hardware_testing.test_mode);
 		/*Stamp update time*/
 		update_timeout = hrt_absolute_time();
 		timeout_timer = true;
@@ -468,7 +468,7 @@ bool MixingOutput::update()
 		//PX4_ERR(" inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
 
 
-		if ((int)automatic_hardware_testing.test_mode_int == 0){
+		if ((int)automatic_hardware_testing.test_mode == 0){
 			//reset motor_test
 			motor_test = false;
 			do_next_motor = true;
@@ -478,20 +478,21 @@ bool MixingOutput::update()
 			do_next_servo = true;
 
 			//ACTUATOR_SHOULD_EXIT = true;
-			PX4_INFO("4.1: I NA SOON");
+			//PX4_INFO("4.1: I NA SOON");
 		}
 
-		else if ((automatic_hardware_testing.test_mode_int == 1)&&(is_motor_function))
+		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY) && (is_motor_function))
 		{
 			//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
 			motor_test = true;
 			//PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
 			//PX4_ERR("Motor loop = %i: ***************",loop_num);
 			++loop_num;
+			// PX4_INFO("4.2 : I NA NUEANG");
 		}
 
 
-		else if ((automatic_hardware_testing.test_mode_int == 2)&&(is_servo_function))
+		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_SERVO_ONLY) && (is_servo_function))
 		{
 			PX4_INFO("AUTO_PFL_MODE 2");
 			servo_test = true;
@@ -500,14 +501,14 @@ bool MixingOutput::update()
 			// ++loop_num_2;
 		}
 
-		else if ((automatic_hardware_testing.test_mode_int == 3)&&(is_motor_function))
+		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_MOTOR_THEN_SERVO)&&(is_motor_function))
 		{
 			PX4_INFO("AUTO_PFL_MODE 3");
 			//motor_test = true;
 			//servo_test = true;
 		}
 
-		else if ((automatic_hardware_testing.test_mode_int == 4) && ((is_motor_function)||(is_servo_function)))
+		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_STOP) && ((is_motor_function)||(is_servo_function)))
 		{
 			PX4_INFO("AUTO_PFL_MODE 4");
 			servo_test = false;
@@ -668,12 +669,14 @@ bool MixingOutput::update()
 
 				/*Actuator_Test Logic Function : Do motor test*/
 				if((motor_test)&&(!done_all_motor)&&(is_motor_function)){
-					//PX4_ERR("actuator_test : motor_test");
+
+					// PX4_ERR("actuator_test : motor_test starting");
+					// PX4_ERR("do next motor is : %s", do_next_motor ? "true" : "false");
 
 					if(do_next_motor){			/*Set time and reset logic to do next motor*/
 						/*kill logic*/
 						do_next_motor = false;
-
+						PX4_ERR("actuator_test : motor_test starting **this message will show one time");
 						/*Open Next logic*/
 						do_motor_sequence = true;
 						in_motor_sequence = true;
@@ -683,7 +686,7 @@ bool MixingOutput::update()
 						motor_sequence_delay = hrt_absolute_time();
 
 						/*Debug*/
-						PX4_INFO("DO Test MOTOR [%i]",motor_id+1);
+						//PX4_INFO("DO Test MOTOR [%i]",motor_id+1);
 					}
 
 					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) < ((double)motor_run_time_ms*1000))){
@@ -771,10 +774,10 @@ bool MixingOutput::update()
 						automatic_hardware_testing.success = true;
 
 						/*Status*/
-						PX4_INFO("_____________________________________________________");
-						PX4_INFO("Finish");
-						PX4_ERR(" motor_test is : %s", motor_test ? "true" : "false");
-						PX4_INFO("_____________________________________________________");
+						// PX4_INFO("_____________________________________________________");
+						// PX4_INFO("Finish");
+						// PX4_ERR(" motor_test is : %s", motor_test ? "true" : "false");
+						// PX4_INFO("_____________________________________________________");
 
 					}
 					_automatic_hardware_testing_pub.publish(automatic_hardware_testing);

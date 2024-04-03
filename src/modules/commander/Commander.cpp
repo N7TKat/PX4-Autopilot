@@ -1523,8 +1523,9 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			initialTime = hrt_absolute_time();
 			//PX4_ERR("PX4 Commander Timer Start");
 		}
-		automatic_hardware_testing.test_mode_int = (int) 1;
-		//automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY;
+		//automatic_hardware_testing.test_mode_int = (int) 1;
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY;
+		//PX4_ERR("Test mode before publish : %i, enum is %i",automatic_hardware_testing.test_mode, automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY);
 		if((is_in_progress && is_success) == false){
 			automatic_hardware_testing.inprogress = true;
 			automatic_hardware_testing.success = false;
@@ -1534,7 +1535,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		}
 		//automatic_hardware_testing.success = false;
 		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
-		if (hrt_elapsed_time(& initialTime) > 5_s){
+		if (hrt_elapsed_time(& initialTime) > 60_s){
 			PX4_WARN("PX4 Exit Test due to Timeout");
 			initialTime_starter = true;
 			initialTime = 0;
@@ -1554,6 +1555,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			PX4_ERR("PX4 Commander Timer Starto");
 		}
 		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_SERVO_ONLY;
+		PX4_INFO("Test mode : %i", automatic_hardware_testing.test_mode);
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 3_s){
@@ -1588,7 +1590,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
 		initialTime_starter = true;
 		initialTime = 0;
-		automatic_hardware_testing.test_mode_int = 4;
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_STOP;
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
 	}
