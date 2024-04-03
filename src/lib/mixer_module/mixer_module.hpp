@@ -333,6 +333,7 @@ private:
 	bool in_motor_sequence{false};
 	bool do_next_motor_delay_timer{false};
 	bool motor_sequence_delay_timer{false};
+	//bool done_motor_test{false};
 
 	hrt_abstime motor_sequence_delay{0};  //(MOTOR RUN TIME)
 	hrt_abstime do_next_motor_delay{0}; //(WAITING TIME)

@@ -1557,7 +1557,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_SERVO_ONLY;
 		PX4_INFO("Test mode : %i", automatic_hardware_testing.test_mode);
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
-		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 3_s){
 			PX4_ERR("PX4 Commander Timeout");
 			initialTime_starter = true;
@@ -1576,7 +1576,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		}
 		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_THEN_SERVO;
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
-		PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
+		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 3_s){
 			PX4_ERR("PX4 Commander Timeout");
 			initialTime_starter = true;

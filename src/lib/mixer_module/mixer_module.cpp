@@ -513,6 +513,7 @@ bool MixingOutput::update()
 			PX4_INFO("AUTO_PFL_MODE 4");
 			servo_test = false;
 			motor_test = false;
+			done_all_motor = true;
 			PX4_INFO("4.4: I NA SEE");
 		}
 
@@ -528,16 +529,16 @@ bool MixingOutput::update()
 	}
 	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing) && (timeout_timer) && (hrt_elapsed_time(& update_timeout) > 12_ms) && ((is_motor_function)||(is_servo_function))){
 		/*auto reset*/
-		PX4_WARN("AUTO RESET TRIGGERED : NO Update");
+		//PX4_WARN("AUTO RESET TRIGGERED : NO Update");
 
-		//reset motor_test
-		motor_test = false;
-		do_next_motor = true;
-		done_all_motor = false;
-		//reset servo_test
-		servo_test = false;
-		do_next_servo = true;
-		timeout_timer = false;
+		// //reset motor_test
+		// motor_test = false;
+		// do_next_motor = true;
+		done_all_motor = true;
+		// //reset servo_test
+		// servo_test = false;
+		// do_next_servo = true;
+		// timeout_timer = false;
 
 	}
 
@@ -606,60 +607,83 @@ bool MixingOutput::update()
 		bool all_disabled = true;
 		_reversible_mask = 0;
 
+		/*Defualt*/
 		for (int i = 0; i < _max_num_outputs; ++i) {
 
-			/*Get output values > Motor Command Check*/
-			if(is_motor_function) //automatic_hardware_testing.test_mode == 1
-			{
-				if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_MOTOR1)&&(int)_function_assignment[i]<actuator_test_s::FUNCTION_SERVO1)
-				{
-					if (_functions[i]) {
-						all_disabled = false;
-						//PX4_WARN("Hi");
-						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
-						if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
-							outputs[i] = _functions[i]->value(_function_assignment[i]);
+			if (_functions[i]) {
+				all_disabled = false;
+				//PX4_WARN("Hi");
+				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+				if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+					outputs[i] = _functions[i]->value(_function_assignment[i]);
 
-						} else {
-							outputs[i] = NAN;
-						}
-						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
-						_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
-
-					} else {	//not use actuator (Like motor 2,3,...,max motor)
-						outputs[i] = NAN;
-					}
+				} else {
+					outputs[i] = NAN;
 				}
-			}
+				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+				_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
 
-			/*Get output values > Servo Command Check*/
-			if(is_servo_function)
-			{
-				if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_SERVO1)&&(int)_function_assignment[i]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS))
-				{
-					if (_functions[i]) {
-						all_disabled = false;
-						//PX4_WARN("Hi");
-						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
-						if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
-							outputs[i] = _functions[i]->value(_function_assignment[i]);
-
-						} else {
-							outputs[i] = NAN;
-						}
-						//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
-						_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
-
-					} else {	//not use actuator (Like servo 2,3,...,max servo)
-						outputs[i] = NAN;
-					}
-				}
+			} else {	//not use actuator (Like servo 2,3,...,max servo)
+				outputs[i] = NAN;
 			}
 
 		}
 
-		//is_in_progress = automatic_hardware_testing.inprogress;
-		//is_success = automatic_hardware_testing.success;
+		// /*Set point*/
+		// for (int i = 0; i < _max_num_outputs; ++i) 
+		// {
+
+		// 	/*Get output values > Motor Command Check*/
+		// 	if(is_motor_function) //automatic_hardware_testing.test_mode == 1
+		// 	{
+		// 		if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_MOTOR1)&&(int)_function_assignment[i]<actuator_test_s::FUNCTION_SERVO1)
+		// 		{
+		// 			if (_functions[i]) {
+		// 				all_disabled = false;
+		// 				//PX4_WARN("Hi");
+		// 				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+		// 				if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+		// 					outputs[i] = _functions[i]->value(_function_assignment[i]);
+
+		// 				} else {
+		// 					outputs[i] = NAN;
+		// 				}
+		// 				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+		// 				_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
+
+		// 			} else {	//not use actuator (Like motor 2,3,...,max motor)
+		// 				outputs[i] = NAN;
+		// 			}
+		// 		}
+		// 	}
+
+		// 	/*Get output values > Servo Command Check*/
+		// 	if(is_servo_function)
+		// 	{
+		// 		if(((int)_function_assignment[i]>=actuator_test_s::FUNCTION_SERVO1)&&(int)_function_assignment[i]<(actuator_test_s::FUNCTION_SERVO1+actuator_test_s::MAX_NUM_SERVOS))
+		// 		{
+		// 			if (_functions[i]) {
+		// 				all_disabled = false;
+		// 				//PX4_WARN("Hi");
+		// 				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+		// 				if (_armed.armed || (_armed.prearmed && _functions[i]->allowPrearmControl())) {
+		// 					outputs[i] = _functions[i]->value(_function_assignment[i]);
+
+		// 				} else {
+		// 					outputs[i] = NAN;
+		// 				}
+		// 				//PX4_INFO("outputs[MAX_ACTUATORS] = %.2f[%i],_functions = %s, _function_assignment[i] = %.2f",(double)outputs[i],MAX_ACTUATORS,_functions[i] ? "true" : "false",(double)_function_assignment[i]);
+		// 				_reversible_mask |= (uint32_t)_functions[i]->reversible(_function_assignment[i]) << i;
+
+		// 			} else {	//not use actuator (Like servo 2,3,...,max servo)
+		// 				outputs[i] = NAN;
+		// 			}
+		// 		}
+		// 	}
+
+		// }
+
+		// /*End of set point*/
 
 		if (!all_disabled) {
 			if (!_armed.armed && !_armed.manual_lockdown) {
