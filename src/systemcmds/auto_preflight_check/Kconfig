@@ -1,0 +1,5 @@
+menuconfig SYSTEMCMDS_AUTO_PREFLIGHT_CHECK
+	bool "auto_preflight_check"
+	default n
+	---help---
+		Enable support for auto_preflight_check
