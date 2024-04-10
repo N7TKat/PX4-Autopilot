@@ -485,7 +485,8 @@ bool MixingOutput::update()
 		{
 			//PX4_INFO("MIXER : AUTO_PFL_MODE 1");
 			motor_test = true;
-			//PX4_WARN(" ACTUATOR_RUN in case 1 is : %s", ACTUATOR_RUN ? "true" : "false");
+			done_all_motor = false;
+			// PX4_WARN(" motor_test in case 1 is : %s", motor_test ? "true" : "false");
 			//PX4_ERR("Motor loop = %i: ***************",loop_num);
 			++loop_num;
 			// PX4_INFO("4.2 : I NA NUEANG");
@@ -630,7 +631,7 @@ bool MixingOutput::update()
 		}
 
 		// /*Set point*/
-		// for (int i = 0; i < _max_num_outputs; ++i) 
+		// for (int i = 0; i < _max_num_outputs; ++i)
 		// {
 
 		// 	/*Get output values > Motor Command Check*/
