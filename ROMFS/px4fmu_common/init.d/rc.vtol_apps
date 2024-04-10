@@ -44,3 +44,8 @@ fw_autotune_attitude_control start vtol
 # Multicopter for now until we have something for VTOL
 #
 land_detector start vtol
+
+if param compare -s APP_AT_PFL_EN 1
+then
+	auto_preflight_check start
+fi

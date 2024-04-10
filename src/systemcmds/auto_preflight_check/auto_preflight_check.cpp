@@ -162,15 +162,15 @@ void AutoPreflightCheck::Run()
 
 		if ((int)automatic_hardware_testing.test_mode == 0){
 			//reset motor_test
-			motor_test = false;
-			DO_NEXT_MOTOR = true;
+			//motor_test = false;
+			//DO_NEXT_MOTOR = true;
 
 			//reset servo_test
-			servo_test = false;
-			DO_NEXT_SERVO = true;
+			//servo_test = false;
+			//DO_NEXT_SERVO = true;
 
 			//ACTUATOR_SHOULD_EXIT = true;
-			//PX4_INFO("4.1: I NA SOON");
+			PX4_INFO("4.1: I NA SOON");
 		}
 
 		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_MOTOR_ONLY))
@@ -211,11 +211,12 @@ void AutoPreflightCheck::Run()
 
 		else{
 			//reset motor_test
-			motor_test = false;
-			DO_NEXT_MOTOR = true;
-			//reset servo_test
-			servo_test = false;
-			DO_NEXT_SERVO = true;
+			// motor_test = false;
+			// DO_NEXT_MOTOR = true;
+			// //reset servo_test
+			// servo_test = false;
+			// DO_NEXT_SERVO = true;
+			PX4_INFO("4.5: I NA Default");
 		}
 
 	}
@@ -235,7 +236,7 @@ void AutoPreflightCheck::Run()
 	}
 
 	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
-		PX4_WARN("automatic_hardware_testing not update");
+		//PX4_WARN("automatic_hardware_testing not update");
 	}
 
 
@@ -250,7 +251,7 @@ void AutoPreflightCheck::Run()
 	// 		case 2:
 	// 			PX4_INFO("AUTO_PFL_MODE 2");
 	// 			servo_test = true;
-	// 			motor_test_done = true;
+	// 			motor_test_is_done = true;
 	// 			break;
 	// 		case 3:
 	// 			PX4_INFO("AUTO_PFL_MODE 3");
@@ -265,14 +266,16 @@ void AutoPreflightCheck::Run()
 	// 	}
 
 	// }
-
+	
 	if(motor_test){
+		//PX4_ERR(" DO_NEXT_MOTOR is : %s", DO_NEXT_MOTOR ? "true" : "false");
 		if(DO_NEXT_MOTOR){
 			DO_MOTOR_SEQUENCE = true;
 			IN_MOTOR_SEQUENCE = true;
 			DO_NEXT_MOTOR = false;
-
+			PX4_INFO("DO Test MOTOR [%i]",j);
 			PX4_INFO("DO Test MOTOR [%i]",MOTOR_ID+1);
+			++j;
 		}
 
 		if((DO_MOTOR_SEQUENCE)&&(IN_MOTOR_SEQUENCE)){
@@ -288,10 +291,11 @@ void AutoPreflightCheck::Run()
 				MOTOR_SEQUENCE = 1;
 				
 				if((MOTOR_ID+2)<MOTOR_MAX){
-					PX4_INFO("Wait Next MOTOR 5 sec.");
+					PX4_INFO("Wait Next MOTOR 1 sec.");
 				}
 				DO_NEXT_MOTOR_DELAY = hrt_absolute_time();
 				DO_NEXT_MOTOR_DELAY_TIMER = true;
+				PX4_ERR(" DO_NEXT_MOTOR_DELAY_TIMER is : %s ", DO_NEXT_MOTOR_DELAY_TIMER ? "true" : "false");
 			}
 			else{
 				PX4_INFO("Wait MOTOR sequence %d sec.",motor_run_time/1000);
@@ -300,42 +304,71 @@ void AutoPreflightCheck::Run()
 			}
 		}
 
+		
 		if((MOTOR_SEQUENCE_DELAY_TIMER)&&(hrt_elapsed_time(& MOTOR_SEQUENCE_DELAY) > ((double)motor_run_time*1000))&&(IN_MOTOR_SEQUENCE)){
 			MOTOR_SEQUENCE_DELAY_TIMER	= false;
 			DO_MOTOR_SEQUENCE = true;
+			PX4_INFO("Wait MOTOR Runtime 3 sec.");
 		}
 
-		if((DO_NEXT_MOTOR_DELAY_TIMER)&&(hrt_elapsed_time(& DO_NEXT_MOTOR_DELAY) > 5_s)){
+		PX4_INFO("DO_NEXT_MOTOR_DELAY : %lu",(hrt_absolute_time()-DO_NEXT_MOTOR_DELAY)/1000000);
+		if((DO_NEXT_MOTOR_DELAY_TIMER)&&(hrt_elapsed_time(& DO_NEXT_MOTOR_DELAY) > 1_s)){
 			DO_NEXT_MOTOR_DELAY_TIMER = false;
-			DO_NEXT_MOTOR = true;
-			++MOTOR_ID;
-			if(MOTOR_ID<MOTOR_MAX){
-				PX4_INFO("Test Next MOTOR [%i] ",MOTOR_ID+1);
+			// DO_NEXT_MOTOR = true;
+			// //++MOTOR_ID;
+			// if(MOTOR_ID<MOTOR_MAX){
+			// 	PX4_INFO("Test Next MOTOR [%i] ",MOTOR_ID+1);
+			// }
+			if(MOTOR_ID < (MOTOR_MAX - 1)){
+				DO_NEXT_MOTOR = true;
+				++MOTOR_ID;
+
+				/*Status*/
+				PX4_WARN("Test Next MOTOR [%i] ", MOTOR_ID + 1);
+
 			}
+			else{ //(motor_id>=motor_max)
+				DO_NEXT_MOTOR = false;
+				done_all_motor = true;
+
+				/*Status*/
+				PX4_WARN("Finish last motor");
+			}
+
 				
 		}
 
-		if(MOTOR_ID>=MOTOR_MAX){
-			motor_test = false;
-			motor_test_done = true;
-			PX4_INFO("****************************************");
-			PX4_INFO("Finish");
+		if(done_all_motor){
+			/*kill logic*/
+			//done_all_motor = false;
 
-			//Reset
-			DO_NEXT_MOTOR = true;
+			motor_test_is_done = true;
+
+
+			/*Reset to Default*/
+			motor_test = false;
+			DO_NEXT_MOTOR = false;//true;
 			DO_MOTOR_SEQUENCE = false;
 			IN_MOTOR_SEQUENCE = false;
 			DO_NEXT_MOTOR_DELAY_TIMER = false;
 			MOTOR_SEQUENCE_DELAY_TIMER = false;
+			MOTOR_SEQUENCE_DELAY = 0;
+			DO_NEXT_MOTOR_DELAY = 0;
+			MOTOR_ID = 0;
 
-			if(_param_auto_pfl_mode.get()==1){
-				PX4_INFO("EXIT ACTUATOR MOTOR TEST");
-				ACTUATOR_SHOULD_EXIT = true;
-			}
+
+			/*Reset to Default -lower*/
+			//motor_test = false;
+			//do_next_motor = true;
+			//do_motor_sequence = false;
+			//do_next_motor_delay_timer = false;
+			//motor_sequence_delay = 0;
+			//in_motor_sequence_delay = 0;
+			//motor_id = 0;
 		}
 	}
 
-	if((servo_test)&&(motor_test_done)&&(!ACTUATOR_SHOULD_EXIT)){
+	if((servo_test)&&(motor_test_is_done)&&(!ACTUATOR_SHOULD_EXIT)){
 		if(DO_NEXT_SERVO){
 			//DO_SERVO_SEQUENCE = true;
 			//IN_SERVO_SEQUENCE = true;

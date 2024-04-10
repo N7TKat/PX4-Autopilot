@@ -103,3 +103,14 @@ PARAM_DEFINE_FLOAT(AT_PFL_MT_TIME, 1.5f);
  * @max 3
 */
 PARAM_DEFINE_INT32(AT_PFL_MODE, 0);
+
+/**
+ * Custom INT for AUTO_PREFLIGHT_CHECK Boolean
+ *
+ * 0 for Disable
+ * 1 for Enable
+ *
+ * @boolean
+ * @group AUTO_PREFLIGHT_CHECK
+ */
+PARAM_DEFINE_INT32(APP_AT_PFL_EN, 0);

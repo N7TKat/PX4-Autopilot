@@ -96,13 +96,13 @@ private:
 	bool ACTUATOR_SHOULD_EXIT{false};
 	bool ACTUATOR_RUN{true};
 	
-	bool servo_test{true};
+	bool servo_test{false};
 	bool param_check{true};
 
 
 	//MOTOR LOGIC
-	bool motor_test{false}; //FUCTION MOTOR motor_test_done
-	bool motor_test_done{false}; 
+	bool motor_test{false}; //FUCTION MOTOR motor_test
+	bool motor_test_is_done{false}; 
 	bool DO_NEXT_MOTOR{true};
 	bool DO_MOTOR_SEQUENCE{false};
 	bool IN_MOTOR_SEQUENCE{false};
@@ -112,6 +112,7 @@ private:
 	hrt_abstime MOTOR_SEQUENCE_DELAY{0};  //(MOTOR RUN TIME)
 	hrt_abstime DO_NEXT_MOTOR_DELAY{0}; //(WAITING TIME)
 
+	int j = 0;
 	int MOTOR_ID = 0;
 	int MOTOR_MAX = 5;
 	int MOTOR_SEQUENCE = 1;
