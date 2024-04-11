@@ -123,7 +123,6 @@ void AutoPreflightCheck::Run()
 			PX4_INFO("auto_preflight_check exit");
 			ACTUATOR_SHOULD_EXIT = true;
 		}
-
 		if(_param_auto_pfl_sv_loop.get()>5||_param_auto_pfl_sv_loop.get()<2)
 		{
 			ACTUATOR_RUN = false;
@@ -147,30 +146,21 @@ void AutoPreflightCheck::Run()
 	// PX4_ERR("ACTUATOR_RUN loop = %i: ********************************************",loop_num_2);
 
 	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing))
-	{	/*if automatic_hardware_testing is update and this is motor and servo fuction*/
-		// PX4_ERR("Test mode at Mixer : %i",automatic_hardware_testing.test_mode);
-		/*Stamp update time*/
+	{	
+
 		update_timeout = hrt_absolute_time();
 		timeout_timer = true;
-		//PX4_INFO("4.9: I NA RAK");
-				// PX4_ERR("1: ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
-				// PX4_ERR("2: test_mode is : %d", automatic_hardware_testing.test_mode_int);
-				// PX4_WARN("3: _function_assignment[i] = %.2f ***************",(double)_function_assignment[1]);
-				// PX4_ERR("ACTUATOR_RUN loop = %i: ***************",loop_num_2);
-				// 	++loop_num_2;
-		//PX4_ERR(" inprogress is : %s", automatic_hardware_testing.inprogress ? "true" : "false");
-
 
 		if ((int)automatic_hardware_testing.test_mode == 0){
-			//reset motor_test
-			//motor_test = false;
-			//DO_NEXT_MOTOR = true;
+			/*---reset motor_test---*/
+			motor_test 		= false;
+			DO_NEXT_MOTOR 	= true;
+			done_all_motor 	= false;
 
-			//reset servo_test
-			//servo_test = false;
-			//DO_NEXT_SERVO = true;
+			/*---reset servo_test---*/
+			servo_test = false;
+			DO_NEXT_SERVO = true;
 
-			//ACTUATOR_SHOULD_EXIT = true;
 			PX4_INFO("4.1: I NA SOON");
 		}
 
@@ -204,10 +194,22 @@ void AutoPreflightCheck::Run()
 		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_STOP))
 		{
 			PX4_INFO("AUTO_PFL_MODE 4");
-			servo_test = false;
+			
+			/*Reset to Default*/
+			done_all_motor = false;
+
 			motor_test = false;
-			done_all_motor = true;
-			PX4_INFO("4.4: I NA SEE");
+			DO_NEXT_MOTOR = true;
+			DO_MOTOR_SEQUENCE = false;
+			IN_MOTOR_SEQUENCE = false;
+			DO_NEXT_MOTOR_DELAY_TIMER = false;
+			MOTOR_SEQUENCE_DELAY_TIMER = false;
+			MOTOR_SEQUENCE_DELAY = 0;
+			DO_NEXT_MOTOR_DELAY = 0;
+
+			MOTOR_ID = 0;
+			MOTOR_SEQUENCE = 1;
+			//PX4_INFO("4.4: I NA SEE");
 		}
 
 		else{
@@ -235,41 +237,6 @@ void AutoPreflightCheck::Run()
 		// timeout_timer = false;
 
 	}
-
-	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
-		//PX4_ERR("automatic_hardware_testing update");
-	}
-	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
-		//PX4_INFO("automatic_hardware_testing not update");
-	}
-
-
-
-	// if(ACTUATOR_RUN){
-	// 	ACTUATOR_RUN = false;
-	// 	switch (_param_auto_pfl_mode.get()){
-	// 		case 1:
-	// 			PX4_INFO("AUTO_PFL_MODE 1");
-	// 			motor_test = true;
-	// 			break;
-	// 		case 2:
-	// 			PX4_INFO("AUTO_PFL_MODE 2");
-	// 			servo_test = true;
-	// 			motor_test_is_done = true;
-	// 			break;
-	// 		case 3:
-	// 			PX4_INFO("AUTO_PFL_MODE 3");
-	// 			motor_test = true;
-	// 			servo_test = true;
-	// 			break;
-	// 		default:
-	// 			PX4_INFO("AUTO_PFL_MODE DENIED");
-	// 			ACTUATOR_RUN = false;
-	// 			ACTUATOR_SHOULD_EXIT = true;
-	// 			break;
-	// 	}
-
-	// }
 	
 	if(motor_test){
 		//PX4_ERR(" DO_NEXT_MOTOR is : %s", DO_NEXT_MOTOR ? "true" : "false");
@@ -358,15 +325,16 @@ void AutoPreflightCheck::Run()
 
 			/*Reset to Default*/
 			motor_test = false;
-			DO_NEXT_MOTOR = false;//true;
+			DO_NEXT_MOTOR = false;
 			DO_MOTOR_SEQUENCE = false;
 			IN_MOTOR_SEQUENCE = false;
 			DO_NEXT_MOTOR_DELAY_TIMER = false;
-			//MOTOR_SEQUENCE_DELAY_TIMER = false;
+			MOTOR_SEQUENCE_DELAY_TIMER = false;
 			MOTOR_SEQUENCE_DELAY = 0;
 			DO_NEXT_MOTOR_DELAY = 0;
-			MOTOR_ID = 0;
 
+			MOTOR_ID = 0;
+			MOTOR_SEQUENCE = 1;
 
 			/*Reset to Default -lower*/
 			//motor_test = false;
