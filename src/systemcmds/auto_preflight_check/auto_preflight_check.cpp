@@ -103,7 +103,7 @@ void AutoPreflightCheck::Run()
 	perf_count(_loop_interval_perf);
 
 	
-	motor_run_time = _param_auto_pfl_mt_time.get()*1000; //default 1.5s AUTO_PFL_MT_TIME
+	motor_run_time_ms = _param_auto_pfl_mt_time.get()*1000; //default 1.5s AUTO_PFL_MT_TIME
 	servo_sequence_max = _param_auto_pfl_sv_loop.get();
 
 	if(param_check){
@@ -152,6 +152,7 @@ void AutoPreflightCheck::Run()
 		/*Stamp update time*/
 		update_timeout = hrt_absolute_time();
 		timeout_timer = true;
+		//PX4_INFO("4.9: I NA RAK");
 				// PX4_ERR("1: ACTUATOR_RUN is : %s", ACTUATOR_RUN ? "true" : "false");
 				// PX4_ERR("2: test_mode is : %d", automatic_hardware_testing.test_mode_int);
 				// PX4_WARN("3: _function_assignment[i] = %.2f ***************",(double)_function_assignment[1]);
@@ -227,7 +228,7 @@ void AutoPreflightCheck::Run()
 		// //reset motor_test
 		// motor_test = false;
 		// do_next_motor = true;
-		done_all_motor = true;
+		//done_all_motor = true;
 		// //reset servo_test
 		// servo_test = false;
 		// do_next_servo = true;
@@ -235,8 +236,11 @@ void AutoPreflightCheck::Run()
 
 	}
 
+	if(_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
+		//PX4_ERR("automatic_hardware_testing update");
+	}
 	if(!_automatic_hardware_testing_sub.update(&automatic_hardware_testing)){
-		//PX4_WARN("automatic_hardware_testing not update");
+		//PX4_INFO("automatic_hardware_testing not update");
 	}
 
 
@@ -273,46 +277,53 @@ void AutoPreflightCheck::Run()
 			DO_MOTOR_SEQUENCE = true;
 			IN_MOTOR_SEQUENCE = true;
 			DO_NEXT_MOTOR = false;
-			PX4_INFO("DO Test MOTOR [%i]",j);
+			//PX4_INFO("DO Test MOTOR [%i]",j);
 			PX4_INFO("DO Test MOTOR [%i]",MOTOR_ID+1);
-			++j;
+			//++j;
 		}
 
 		if((DO_MOTOR_SEQUENCE)&&(IN_MOTOR_SEQUENCE)){
 			DO_MOTOR_SEQUENCE = false;
 			value = 0.15f;
-			actuator_test(actuator_test_s::FUNCTION_MOTOR1+motor_oder[MOTOR_ID], value, motor_run_time, false);
+			PX4_WARN("DO_MOTOR_SEQUENCE [%i] , MOTOR_SEQUENCE[%i/%i]",j,MOTOR_SEQUENCE,MOTOR_SEQUENCE_MAX);
+			++j;
 
-			PX4_INFO("Test MOTOR [%i] at SEQUENCE[%i]",MOTOR_ID+1,MOTOR_SEQUENCE);
-			++MOTOR_SEQUENCE;
-
-			if(MOTOR_SEQUENCE>=MOTOR_SEQUENCE_MAX){
+			if(MOTOR_SEQUENCE>MOTOR_SEQUENCE_MAX){
 				IN_MOTOR_SEQUENCE = false;
 				MOTOR_SEQUENCE = 1;
 				
-				if((MOTOR_ID+2)<MOTOR_MAX){
-					PX4_INFO("Wait Next MOTOR 1 sec.");
+				if((MOTOR_ID)<MOTOR_MAX){
+					PX4_INFO("Wait Next MOTOR 5 sec.");
 				}
 				DO_NEXT_MOTOR_DELAY = hrt_absolute_time();
 				DO_NEXT_MOTOR_DELAY_TIMER = true;
-				PX4_ERR(" DO_NEXT_MOTOR_DELAY_TIMER is : %s ", DO_NEXT_MOTOR_DELAY_TIMER ? "true" : "false");
+				//PX4_ERR(" DO_NEXT_MOTOR_DELAY_TIMER is : %s ", DO_NEXT_MOTOR_DELAY_TIMER ? "true" : "false");
 			}
 			else{
-				PX4_INFO("Wait MOTOR sequence %d sec.",motor_run_time/1000);
+				actuator_test(actuator_test_s::FUNCTION_MOTOR1+motor_oder[MOTOR_ID], value, motor_run_time_ms, false);
+				PX4_ERR("Test MOTOR [%i] at SEQUENCE[%i]",MOTOR_ID+1,MOTOR_SEQUENCE);
+
+				PX4_INFO("Wait MOTOR sequence %d sec.",motor_run_time_ms/1000);
+
+				++MOTOR_SEQUENCE;
+
 				MOTOR_SEQUENCE_DELAY = hrt_absolute_time();
 				MOTOR_SEQUENCE_DELAY_TIMER = true;
 			}
 		}
-
 		
-		if((MOTOR_SEQUENCE_DELAY_TIMER)&&(hrt_elapsed_time(& MOTOR_SEQUENCE_DELAY) > ((double)motor_run_time*1000))&&(IN_MOTOR_SEQUENCE)){
-			MOTOR_SEQUENCE_DELAY_TIMER	= false;
+		// PX4_ERR(" MSDT[%s], lapstime[%s], Insq[%s] ",
+		// 			MOTOR_SEQUENCE_DELAY_TIMER ? "true" : "false",
+		// 			(hrt_elapsed_time(& MOTOR_SEQUENCE_DELAY) > ((double)motor_run_time_ms*1000)) ? "true" : "false",
+		// 			IN_MOTOR_SEQUENCE ? "true" : "false");
+		if((MOTOR_SEQUENCE_DELAY_TIMER)&&(hrt_elapsed_time(& MOTOR_SEQUENCE_DELAY) >= ((double)motor_run_time_ms*1000))&&(IN_MOTOR_SEQUENCE)){
+			MOTOR_SEQUENCE_DELAY_TIMER = false;
 			DO_MOTOR_SEQUENCE = true;
-			PX4_INFO("Wait MOTOR Runtime 3 sec.");
+			PX4_INFO("^^^^^^^^Wait MOTOR Runtime 3 sec.");
 		}
 
-		PX4_INFO("DO_NEXT_MOTOR_DELAY : %lu",(hrt_absolute_time()-DO_NEXT_MOTOR_DELAY)/1000000);
-		if((DO_NEXT_MOTOR_DELAY_TIMER)&&(hrt_elapsed_time(& DO_NEXT_MOTOR_DELAY) > 1_s)){
+		//PX4_INFO("DO_NEXT_MOTOR_DELAY : %lu",(hrt_absolute_time()-DO_NEXT_MOTOR_DELAY)/1000000);
+		if((DO_NEXT_MOTOR_DELAY_TIMER)&&(hrt_elapsed_time(& DO_NEXT_MOTOR_DELAY) > 5_s)){
 			DO_NEXT_MOTOR_DELAY_TIMER = false;
 			// DO_NEXT_MOTOR = true;
 			// //++MOTOR_ID;
@@ -324,7 +335,7 @@ void AutoPreflightCheck::Run()
 				++MOTOR_ID;
 
 				/*Status*/
-				PX4_WARN("Test Next MOTOR [%i] ", MOTOR_ID + 1);
+				PX4_WARN("****Test Next MOTOR [%i] ", MOTOR_ID + 1);
 
 			}
 			else{ //(motor_id>=motor_max)
@@ -351,7 +362,7 @@ void AutoPreflightCheck::Run()
 			DO_MOTOR_SEQUENCE = false;
 			IN_MOTOR_SEQUENCE = false;
 			DO_NEXT_MOTOR_DELAY_TIMER = false;
-			MOTOR_SEQUENCE_DELAY_TIMER = false;
+			//MOTOR_SEQUENCE_DELAY_TIMER = false;
 			MOTOR_SEQUENCE_DELAY = 0;
 			DO_NEXT_MOTOR_DELAY = 0;
 			MOTOR_ID = 0;

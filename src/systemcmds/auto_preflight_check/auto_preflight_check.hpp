@@ -91,7 +91,7 @@ private:
 
 	float value = 0.10f;
 	int motor_oder[5] = {0, 3, 1, 2, 4};
-	int motor_run_time; //how long each motor spinning in once time (default 1.5 sec, max 5.0 sec)
+	int motor_run_time_ms; //how long each motor spinning in once time (default 1.5 sec, max 5.0 sec)
 	
 	bool ACTUATOR_SHOULD_EXIT{false};
 	bool ACTUATOR_RUN{true};
