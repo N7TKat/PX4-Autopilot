@@ -701,7 +701,7 @@ bool MixingOutput::update()
 					if(do_next_motor){			/*Set time and reset logic to do next motor*/
 						/*kill logic*/
 						do_next_motor = false;
-						PX4_ERR("actuator_test : motor_test starting **this message will show one time");
+						PX4_INFO("actuator_test : motor_test starting **this message will show one time");
 						/*Open Next logic*/
 						do_motor_sequence = true;
 						in_motor_sequence = true;
@@ -712,6 +712,7 @@ bool MixingOutput::update()
 
 						/*Debug*/
 						//PX4_INFO("DO Test MOTOR [%i]",motor_id+1);
+						PX4_INFO("Do Test MOTOR [%i] ", motor_id+1);
 					}
 
 					if((do_motor_sequence)&&(hrt_elapsed_time(& motor_sequence_delay) < ((double)motor_run_time_ms*1000))){
@@ -764,7 +765,7 @@ bool MixingOutput::update()
 							++motor_id;
 
 							/*Status*/
-							PX4_WARN("Test Next MOTOR [%i] ", motor_id + 1);
+							PX4_INFO("Test Next MOTOR [%i] ", motor_id + 1);
 
 						}
 						else{ //(motor_id>=motor_max)
@@ -772,7 +773,7 @@ bool MixingOutput::update()
 							done_all_motor = true;
 
 							/*Status*/
-							PX4_WARN("Finish last motor");
+							PX4_INFO("Finish last motor");
 						}
 
 					}
