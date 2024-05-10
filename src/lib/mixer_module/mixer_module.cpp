@@ -511,11 +511,11 @@ bool MixingOutput::update()
 
 		else if (((int)automatic_hardware_testing.test_mode == automatic_hardware_testing_s::TEST_MODE_STOP) && ((is_motor_function)||(is_servo_function)))
 		{
-			PX4_INFO("AUTO_PFL_MODE 4");
+			// PX4_INFO("AUTO_PFL_MODE 4");
 			servo_test = false;
 			motor_test = false;
 			done_all_motor = true;
-			PX4_INFO("4.4: I NA SEE");
+			PX4_INFO("Stop Testing via FlightLync Command");
 		}
 
 		else{
