@@ -31,6 +31,10 @@
  *
  ****************************************************************************/
 
+/*
+*	Version History
+*	add parameter protocol to get parameter for change UAVs Flight logs to UAVs Mission logs
+*/
 #pragma once
 
 /// @file mavlink_log_handler.h
@@ -45,13 +49,21 @@
 
 #include "mavlink_bridge_header.h"
 
+#include <parameters/param.h>
+#include <px4_platform_common/module_params.h>
+#include <uORB/SubscriptionInterval.hpp>
+#include <uORB/topics/parameter_update.h>
+
+using namespace time_literals;
+
 class Mavlink;
 
 // MAVLink LOG_* Message Handler
-class MavlinkLogHandler
+class MavlinkLogHandler : public ModuleParams
 {
 public:
 	MavlinkLogHandler(Mavlink *mavlink);
+
 	~MavlinkLogHandler();
 
 	// Handle possible LOG message
@@ -105,4 +117,15 @@ private:
 	uint32_t    _current_log_data_remaining{0};
 	FILE       *_current_log_filep{nullptr};
 	char        _current_log_filename[128]; //TODO: consider to allocate on runtime
+
+	void _parameters_update();
+
+	void _folder_selector();
+
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::MAV_LOG_MODE>) _param_mav_log_mode
+	)
+
+	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+
 };
