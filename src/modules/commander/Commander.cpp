@@ -1492,7 +1492,7 @@ unsigned Commander::handleCommandActuatorTest(const vehicle_command_s &cmd)
 unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 {
 
-	//PX4_INFO("Starting : Starting The Automatic Hardware Checking System");
+	// PX4_INFO("Starting : Starting The Automatic Hardware Checking System");
 	// PX4_INFO("Param 1 : %f ",(double)cmd.param1);
 	// PX4_INFO("Param 2 : %f ",(double)cmd.param2);
 	// PX4_INFO("Param 3 : %f ",(double)cmd.param3);
@@ -1500,7 +1500,6 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 	// PX4_INFO("Param 5 : %f ",(double)cmd.param5);
 	// PX4_INFO("Param 6 : %f ",(double)cmd.param6);
 	// PX4_INFO("Param 7 : %f ",(double)cmd.param7);
-
 
 	automatic_hardware_testing_s automatic_hardware_testing{};
 	automatic_hardware_testing.timestamp = hrt_absolute_time();
@@ -1535,8 +1534,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		}
 		//automatic_hardware_testing.success = false;
 		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
-		if (hrt_elapsed_time(& initialTime) > 60_s){
-			PX4_WARN("PX4 Exit Test due to Timeout");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit MODE 1 : Motor only due to Timeout");
 			initialTime_starter = true;
 			initialTime = 0;
 			automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_RELEASE_ACTUATOR;
@@ -1552,14 +1551,13 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
-			PX4_ERR("PX4 Commander Timer Starto");
 		}
 		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_SERVO_ONLY;
 		PX4_INFO("Test mode : %i", automatic_hardware_testing.test_mode);
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
-		if (hrt_elapsed_time(& initialTime) > 3_s){
-			PX4_ERR("PX4 Commander Timeout");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit MODE 2 : Servo only due to Timeout");
 			initialTime_starter = true;
 			initialTime = 0;
 			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
@@ -1572,13 +1570,60 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
-			PX4_ERR("PX4 Commander Timer Starto");
 		}
 		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_MOTOR_THEN_SERVO;
 		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
-		if (hrt_elapsed_time(& initialTime) > 3_s){
-			PX4_ERR("PX4 Commander Timeout");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit MODE 3 : MT then SV due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	/*PASS Mode*/
+	if ((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	/*FAILED MODE*/
+	if ((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+
+	/*REDO MODE*/
+	if ((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit REDO MODE due to Timeout");
 			initialTime_starter = true;
 			initialTime = 0;
 			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
