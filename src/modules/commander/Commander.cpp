@@ -1532,6 +1532,7 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 			_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
 
 		}
+		PX4_INFO("Test mode : %i", automatic_hardware_testing.test_mode);
 		//automatic_hardware_testing.success = false;
 		//PX4_WARN("%lu",hrt_elapsed_time(& initialTime));
 		if (hrt_elapsed_time(& initialTime) > 2_s){
@@ -1582,9 +1583,18 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		}
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
+	
+	if ((double)cmd.param1 >= 3.999 && (double)cmd.param1 <= 4.001) {
+		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
+		initialTime_starter = true;
+		initialTime = 0;
+		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_STOP;
+		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+	}
 
-	/*PASS Mode*/
-	if ((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) {
+	/*ALL PASS Mode*/
+	if ((double)cmd.param2 >= 10.999 && (double)cmd.param2 <= 11.001) {
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
@@ -1599,8 +1609,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
 
-	/*FAILED MODE*/
-	if ((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) {
+	/*ALL FAILED MODE*/
+	if ((double)cmd.param2 >= 21.999 && (double)cmd.param2 <= 22.001) {
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
@@ -1615,8 +1625,8 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
 
-	/*REDO MODE*/
-	if ((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) {
+	/*ALL REDO MODE*/
+	if ((double)cmd.param2 >= 32.999 && (double)cmd.param2 <= 33.001) {
 		if (initialTime_starter) {
 			initialTime_starter = false;
 			initialTime = hrt_absolute_time();
@@ -1630,15 +1640,376 @@ unsigned Commander::handleCommandUserAthwcs(const vehicle_command_s &cmd)
 		}
 		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
-
-	if ((double)cmd.param1 >= 3.999 && (double)cmd.param1 <= 4.001) {
-		PX4_INFO("IN TEST MODE : 4-TERMINATE TESTING");
-		initialTime_starter = true;
-		initialTime = 0;
-		automatic_hardware_testing.test_mode = automatic_hardware_testing_s::TEST_MODE_STOP;
-		_automatic_hardware_testing_pub.publish(automatic_hardware_testing);
-		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+	
+	// Start of EACH-PASS MODE
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 0.000 && (double)cmd.param3 <= 0.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("1-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 1-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 0.999 && (double)cmd.param3 <= 1.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("2-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 2-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 1.999 && (double)cmd.param3 <= 2.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("3-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 3-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 2.999 && (double)cmd.param3 <= 3.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("4-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 4-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 3.999 && (double)cmd.param3 <= 4.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("5-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 5-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 4.999 && (double)cmd.param3 <= 5.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("6-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 6-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 5.999 && (double)cmd.param3 <= 6.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("7-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 7-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 0.999 && (double)cmd.param2 <= 1.001) &&
+			((double)cmd.param3 >= 6.999 && (double)cmd.param3 <= 7.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("8-PASS MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 8-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	// End of EACH-PASS MODE
+
+	// Start of EACH-FAILED MODE
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 0.000 && (double)cmd.param3 <= 0.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("1-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 1-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 0.999 && (double)cmd.param3 <= 1.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("2-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 2-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 1.999 && (double)cmd.param3 <= 2.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("3-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 3-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 2.999 && (double)cmd.param3 <= 3.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("4-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 4-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 3.999 && (double)cmd.param3 <= 4.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("5-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 5-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 4.999 && (double)cmd.param3 <= 5.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("6-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 6-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 5.999 && (double)cmd.param3 <= 6.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("7-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 7-FAILED MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 1.999 && (double)cmd.param2 <= 2.001) &&
+			((double)cmd.param3 >= 6.999 && (double)cmd.param3 <= 7.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("8-FAILED MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 FAILED 8-PASS MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	// End of EACH-FAILED MODE
+
+	// Start of EACH-REDO MODE
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 0.000 && (double)cmd.param3 <= 0.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("1-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 1-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 0.999 && (double)cmd.param3 <= 1.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("2-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 2-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 1.999 && (double)cmd.param3 <= 2.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("3-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 3-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 2.999 && (double)cmd.param3 <= 3.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("4-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 4-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 3.999 && (double)cmd.param3 <= 4.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("5-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 5-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 4.999 && (double)cmd.param3 <= 5.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("6-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 6-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 5.999 && (double)cmd.param3 <= 6.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("7-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 Exit 7-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	if (((double)cmd.param2 >= 2.999 && (double)cmd.param2 <= 3.001) &&
+			((double)cmd.param3 >= 6.999 && (double)cmd.param3 <= 7.001)) {
+		if (initialTime_starter) {
+			initialTime_starter = false;
+			initialTime = hrt_absolute_time();
+		}
+		PX4_INFO("8-REDO MODE : In progress");
+		if (hrt_elapsed_time(& initialTime) > 2_s){
+			PX4_WARN("PX4 FAILED 8-REDO MODE due to Timeout");
+			initialTime_starter = true;
+			initialTime = 0;
+			return vehicle_command_ack_s::VEHICLE_CMD_RESULT_CANCELLED;
+		}
+		return vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	}
+	// End of EACH-REDO Mode
+
 	return vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
 }
 
