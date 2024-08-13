@@ -1424,6 +1424,10 @@ void Logger::start_log_file(LogType type)
 		write_console_output();
 		write_events_file(LogType::Full);
 		write_excluded_optional_topics(type);
+	} else if (type == LogType::Mission){
+		write_parameters(type);
+	} else {
+		printf("no selected type");
 	}
 
 	write_all_add_logged_msg(type);
@@ -1635,7 +1639,6 @@ void Logger::write_console_output()
 
 		buffer[math::min(read_size, size)] = '\0';
 		write_info_multiple(LogType::Full, "boot_console_output", buffer, !first);
-
 		size -= read_size;
 		first = false;
 	}
@@ -1802,6 +1805,7 @@ void Logger::write_all_add_logged_msg(LogType type)
 
 	int sub_count = _num_subscriptions;
 
+	//note
 	if (type == LogType::Mission) {
 		sub_count = _num_mission_subs;
 	}
