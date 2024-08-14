@@ -451,11 +451,14 @@ void LoggedTopics::initialize_mission_topics(MissionLogType mission_log_type)
 		add_mission_topic("mission_result");
 		add_mission_topic("vehicle_global_position", 1000);
 		add_mission_topic("vehicle_status", 1000);
-		add_mission_topic("battery_status", 200);
 		add_mission_topic("wind", 1000);
 		add_mission_topic("home_position");
+		add_mission_topic("vehicle_local_position", 100);
+		add_mission_topic("vehicle_gps_position", 500);
+		add_mission_topic("airspeed", 1000);
+		add_mission_topic("vehicle_attitude", 50);
+		add_mission_topic("battery_status", 200);
 		add_mission_topic("parameter_update");
-		// add_mission_topic("vehicle_land_detected");
 
 
 	} else if (mission_log_type == MissionLogType::Geotagging) {
