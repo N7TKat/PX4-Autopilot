@@ -449,6 +449,7 @@ void LoggedTopics::initialize_mission_topics(MissionLogType mission_log_type)
 	if (mission_log_type == MissionLogType::Complete) {
 		add_mission_topic("camera_capture");
 		add_mission_topic("mission_result");
+		add_mission_multi_topic("battery_status", 1000, 2);  // 1hz
 		add_mission_topic("vehicle_global_position", 1000);
 		add_mission_topic("vehicle_status", 1000);
 		add_mission_topic("wind", 1000);
@@ -457,7 +458,6 @@ void LoggedTopics::initialize_mission_topics(MissionLogType mission_log_type)
 		add_mission_topic("vehicle_gps_position", 500);
 		add_mission_topic("airspeed", 1000);
 		add_mission_topic("vehicle_attitude", 50);
-		add_mission_topic("battery_status", 200);
 		add_mission_topic("parameter_update");
 
 
@@ -471,6 +471,17 @@ void LoggedTopics::add_mission_topic(const char *name, uint16_t interval_ms)
 	if (add_topic(name, interval_ms)) {
 		++_num_mission_subs;
 	}
+}
+
+bool LoggedTopics::add_mission_multi_topic(const char *name, uint16_t interval_ms, uint8_t max_num_instances, bool optional)
+{
+	// add all possible instances
+	for (uint8_t instance = 0; instance < max_num_instances; instance++) {
+		add_topic(name, interval_ms, instance, optional);
+		++_num_mission_subs;
+	}
+	// ++_num_mission_subs;
+	return true;
 }
 
 bool LoggedTopics::add_topic(const orb_metadata *topic, uint16_t interval_ms, uint8_t instance, bool optional)

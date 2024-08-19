@@ -160,6 +160,18 @@ private:
 	void add_mission_topic(const char *name, uint16_t interval_ms = 0);
 
 	/**
+	 * Add a topic to be logged. but mission
+	 * @param name topic name
+	 * @param interval limit in milliseconds if >0, otherwise log as fast as the topic is updated.
+	 * @param instance orb topic instance
+	 * @param max_num_instances the max multi-instance to add.
+	 * @param optional if true, the topic is only added if it exists
+	 * @return true on success
+	 */
+	bool add_mission_multi_topic(const char *name, uint16_t interval_ms = 0, uint8_t max_num_instances = ORB_MULTI_MAX_INSTANCES,
+			     bool optional = false);
+
+	/**
 	 * Add topic subscriptions based on the profile configuration
 	 */
 	void initialize_configured_topics(SDLogProfileMask profile);

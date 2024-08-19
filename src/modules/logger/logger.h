@@ -155,7 +155,7 @@ public:
 
 private:
 
-	static constexpr int		MAX_MISSION_TOPICS_NUM = 15; /**< Maximum number of mission topics */
+	static constexpr int		MAX_MISSION_TOPICS_NUM = 20; /**< Maximum number of mission topics */
 	static constexpr unsigned	MAX_NO_LOGFILE = 999;	/**< Maximum number of log files */
 	static constexpr const char	*LOG_ROOT[(int)LogType::Count] = {
 		PX4_STORAGEDIR "/log",
