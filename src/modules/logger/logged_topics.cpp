@@ -449,7 +449,7 @@ void LoggedTopics::initialize_mission_topics(MissionLogType mission_log_type)
 	if (mission_log_type == MissionLogType::Complete) {
 		add_mission_topic("camera_capture");
 		add_mission_topic("mission_result");
-		add_mission_multi_topic("battery_status", 1000, 2);  // 1hz
+		add_mission_multi_topic("battery_status", 200, 2);
 		add_mission_topic("vehicle_global_position", 1000);
 		add_mission_topic("vehicle_status", 1000);
 		add_mission_topic("wind", 1000);
