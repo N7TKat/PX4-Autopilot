@@ -1006,25 +1006,25 @@ bool Logger::handle_event_updates(uint32_t &total_bytes)
 			}
 
 			if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
-						data_written = true;
+				data_written = true;
 
 			}
 
 			// mission log: only warnings or higher
-			if (events::internalLogLevel(orb_event->log_levels) <= events::LogLevelInternal::Warning) {
-				if (_writer.is_started(LogType::Mission)) {
-					memcpy(&updated_sequence, &orb_event->event_sequence, sizeof(updated_sequence));
-					updated_sequence -= _event_sequence_offset_mission;
-					memcpy(&orb_event->event_sequence, &updated_sequence, sizeof(updated_sequence));
+			// if (events::internalLogLevel(orb_event->log_levels) <= events::LogLevelInternal::Warning) {
+			// 	if (_writer.is_started(LogType::Mission)) {
+			// 		memcpy(&updated_sequence, &orb_event->event_sequence, sizeof(updated_sequence));
+			// 		updated_sequence -= _event_sequence_offset_mission;
+			// 		memcpy(&orb_event->event_sequence, &updated_sequence, sizeof(updated_sequence));
 
-					if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
-						data_written = true;
-					}
-				}
+			// 		if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
+			// 			data_written = true;
+			// 		}
+			// 	}
 
- 			} else {
-				++_event_sequence_offset_mission; // skip this event
-			}
+ 			// } else {
+			// 	++_event_sequence_offset_mission; // skip this event
+			// }
 		}
 	}
 
