@@ -817,6 +817,7 @@ void Logger::run()
 					strncpy((char *)(_msg_buffer + 12), message, sizeof(ulog_message_logging_s::message));
 
 					write_message(LogType::Full, _msg_buffer, write_msg_size + ULOG_MSG_HEADER_LEN);
+					write_message(LogType::Mission, _msg_buffer, write_msg_size + ULOG_MSG_HEADER_LEN);
 				}
 			}
 
@@ -838,6 +839,7 @@ void Logger::run()
 				_msg_buffer[10] = 0x12;
 
 				write_message(LogType::Full, _msg_buffer, write_msg_size + ULOG_MSG_HEADER_LEN);
+				write_message(LogType::Mission, _msg_buffer, write_msg_size + ULOG_MSG_HEADER_LEN);
 				_last_sync_time = loop_time;
 			}
 
@@ -1011,21 +1013,25 @@ bool Logger::handle_event_updates(uint32_t &total_bytes)
 				data_written = true;
 			}
 
-			// mission log: only warnings or higher
-			if (events::internalLogLevel(orb_event->log_levels) <= events::LogLevelInternal::Warning) {
-				if (_writer.is_started(LogType::Mission)) {
-					memcpy(&updated_sequence, &orb_event->event_sequence, sizeof(updated_sequence));
-					updated_sequence -= _event_sequence_offset_mission;
-					memcpy(&orb_event->event_sequence, &updated_sequence, sizeof(updated_sequence));
-
-					if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
-						data_written = true;
-					}
-				}
-
-			} else {
-				++_event_sequence_offset_mission; // skip this event
+			if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
+				data_written = true;
 			}
+
+			// mission log: only warnings or higher
+			// if (events::internalLogLevel(orb_event->log_levels) <= events::LogLevelInternal::Warning) {
+			// 	if (_writer.is_started(LogType::Mission)) {
+			// 		memcpy(&updated_sequence, &orb_event->event_sequence, sizeof(updated_sequence));
+			// 		updated_sequence -= _event_sequence_offset_mission;
+			// 		memcpy(&orb_event->event_sequence, &updated_sequence, sizeof(updated_sequence));
+
+			// 		if (write_message(LogType::Mission, _msg_buffer, msg_size)) {
+			// 			data_written = true;
+			// 		}
+			// 	}
+
+			// } else {
+			// 	++_event_sequence_offset_mission; // skip this event
+			// }
 		}
 	}
 
@@ -1433,6 +1439,10 @@ void Logger::start_log_file(LogType type)
 			write_console_output();
 			write_events_file(LogType::Full);
 			write_excluded_optional_topics(type);
+		} else if (type == LogType::Mission){
+			write_parameters(type);
+		} else {
+			printf("no selected type");
 		}
 
 		write_all_add_logged_msg(type);
