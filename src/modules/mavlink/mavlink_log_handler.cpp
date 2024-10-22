@@ -46,6 +46,10 @@ static const char *kLogRoot    = MOUNTPOINT "/log";
 static const char *kLogData    = MOUNTPOINT "/logdata.txt";
 static const char *kTmpData    = MOUNTPOINT "/$log$.txt";
 
+static const char *mLogRoot    = MOUNTPOINT "/mission_log";
+static const char *mLogData    = MOUNTPOINT "/mission_logdata.txt";
+static const char *mTmpData    = MOUNTPOINT "/$mission_log$.txt";
+
 #ifdef __PX4_NUTTX
 #define PX4LOG_REGULAR_FILE DTYPE_FILE
 #define PX4LOG_DIRECTORY    DTYPE_DIRECTORY
@@ -80,8 +84,12 @@ stat_file(const char *file, time_t *date = nullptr, uint32_t *size = nullptr)
 }
 
 //-------------------------------------------------------------------
-MavlinkLogHandler::MavlinkLogHandler(Mavlink *mavlink)
-	: _mavlink(mavlink)
+// MavlinkLogHandler::MavlinkLogHandler(Mavlink *mavlink)
+// 	: _mavlink(mavlink)
+
+MavlinkLogHandler::MavlinkLogHandler(Mavlink *mavlink) :
+	ModuleParams(nullptr),
+	_mavlink(mavlink)
 {
 
 }
@@ -443,6 +451,9 @@ MavlinkLogHandler::_init_list_helper()
 
 	_current_log_filename[0] = 0;
 
+	// initialize folder selector
+	_folder_selector();
+
 	// Remove old log data file (if any)
 	unlink(kLogData);
 	// Open log directory
@@ -627,4 +638,23 @@ MavlinkLogHandler::_delete_all(const char *dir)
 	}
 
 	closedir(dp);
+}
+void MavlinkLogHandler::_parameters_update()
+{
+	// Check if parameters have changed
+	if (_parameter_update_sub.updated()) {
+		// clear update
+		parameter_update_s param_update;
+		_parameter_update_sub.copy(&param_update);
+		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
+	}
+}
+void MavlinkLogHandler::_folder_selector()
+{
+	_parameters_update();
+	if (_param_mav_log_mode.get() == 1) {
+		kLogRoot = mLogRoot;
+		kLogData = mLogData;
+		kTmpData = mTmpData;
+	}
 }

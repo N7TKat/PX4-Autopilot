@@ -155,3 +155,16 @@ PARAM_DEFINE_INT32(MAV_HB_FORW_EN, 1);
  * @max 250
  */
 PARAM_DEFINE_INT32(MAV_RADIO_TOUT, 5);
+
+/**
+ * Log mode for download between UAVs log and Mission log
+ *
+ * @value 0 Flight Logs
+ * @value 1 Mission Logs
+ *
+ * @group MAVLink
+ * @min 0
+ * @max 1
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(MAV_LOG_MODE, 0);
